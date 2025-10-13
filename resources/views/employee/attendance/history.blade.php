@@ -51,7 +51,7 @@
                                                                     @elseif($attendance->status == 'absent') bg-red-100 text-red-800
                                                                     @elseif($attendance->status == 'leave') bg-blue-100 text-blue-800
                                                                     @else bg-gray-100 text-gray-800 @endif">
-                                                    {{ ucfirst($attendance->status) }}
+                                                    {{ ucfirst($attendance->status == 'present' ? 'Có mặt' : ($attendance->status == 'late' ? 'Đi trễ' : ($attendance->status == 'absent' ? 'Vắng' : 'N/A'))) }}
                                                 </span>
                                             @else
                                                 N/A

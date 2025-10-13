@@ -18,17 +18,10 @@ use App\Http\Controllers\Admin\EmployeeScheduleController;
 // --- Employee Controllers ---
 use App\Http\Controllers\Employee\EmployeeAttendanceController as EmployeeAttendanceController;
 use App\Http\Controllers\Employee\ProfileController as EmployeeProfileController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+use App\Http\Controllers\KioskController; 
+use App\Http\Controllers\Api\FaceApiController; 
+use App\Http\Controllers\Employee\ScheduleRegistrationController;
+use App\Http\Controllers\Admin\ScheduleApprovalController;
 
 // --- Trang chủ ---
 // Chuyển hướng người dùng chưa đăng nhập đến trang login
@@ -46,7 +39,7 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.employees.index'); // Hoặc chuyển hướng đến trang chính của admin
     } elseif (Auth::user()->isEmployee()) {
         // return view('employee.dashboard'); // Load view employee dashboard
-        return redirect()->route('employee.attendance.create'); // Hoặc chuyển hướng đến trang chấm công
+        return redirect()->route('employee.attendance.history'); // Hoặc chuyển hướng đến trang chấm công
     } else {
         Auth::logout();
         return redirect('/login');
@@ -122,6 +115,13 @@ Route::middleware(['auth', 'admin']) // Yêu cầu đăng nhập và là admin
             Route::get('/salary-report', [AdminReportController::class, 'salaryReport'])->name('salary-report');
         });
 
+         Route::prefix('schedule-approvals')->name('schedule_approvals.')->group(function() {
+            // Trang chính để chọn nhân viên và tháng
+            Route::get('/', [ScheduleApprovalController::class, 'index'])->name('index');
+            // Xử lý việc lưu và phê duyệt lịch
+            Route::post('/', [ScheduleApprovalController::class, 'approve'])->name('approve');
+        });
+
     }); // Kết thúc nhóm route Admin
 
 // --- Nhóm Route cho Employee ---
@@ -143,8 +143,34 @@ Route::middleware(['auth', 'employee']) // Yêu cầu đăng nhập và là empl
         // Tùy chọn: Route xem bảng lương cá nhân
         // Route::get('salaries', [EmployeeSalaryController::class, 'index'])->name('salaries.index');
         // Route::get('salaries/{salary}', [EmployeeSalaryController::class, 'show'])->name('salaries.show'); // Chỉ xem lương của mình
-    
+        
+        Route::get('/face-registration', [EmployeeProfileController::class, 'showFaceRegistrationForm'])
+            ->middleware(['auth', 'employee'])
+            ->name('face.register.form');
+        Route::post('/face/register', [FaceApiController::class, 'registerFace'])->name('face.register.store');
+        Route::get('/face/status', [FaceApiController::class, 'getRegistrationStatus'])->name('face.status');
+        
+        Route::prefix('schedule-registration')->name('schedule.')->group(function() {
+            // Hiển thị giao diện đăng ký (lịch tháng)
+            Route::get('/', [ScheduleRegistrationController::class, 'index'])->name('index');
+            // Xử lý việc lưu/cập nhật lịch đăng ký
+            Route::post('/', [ScheduleRegistrationController::class, 'store'])->name('store');
+        });
+
+
     }); // Kết thúc nhóm route Employee
+
+// Route cho trang Kiosk chấm công
+Route::get('/kiosk/attendance', [KioskController::class, 'show'])
+    ->name('kiosk.attendance.show');
+            
+Route::get('/test-time', function() {
+    return response()->json([
+        'carbon_now' => now()->toDateTimeString(),
+        'php_date' => date('Y-m-d H:i:s'),
+        'config_timezone' => config('app.timezone')
+    ]);
+});
 // --- Route Logout ---
 Route::get('/logout', function () {
     Auth::logout();

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Auth;
 
 
 class UserController extends Controller
@@ -46,8 +47,12 @@ class UserController extends Controller
      */
     public function create()
     {
-        // Có thể chỉ cho tạo Admin ở đây
-        return view('admin.users.create');
+         $employees = Employee::whereDoesntHave('user')
+                        ->orderBy('last_name')
+                        ->orderBy('first_name')
+                        ->get();
+         
+        return view('admin.users.create', compact('employees'));
     }
 
     /**
@@ -137,9 +142,10 @@ class UserController extends Controller
         if ($user->isAdmin() && User::where('role', 'admin')->count() <= 1) {
             return redirect()->route('admin.users.index')->with('error', 'Không thể xóa tài khoản Admin cuối cùng.');
         }
+        $userauth = Auth::user();
 
         // Kiểm tra nếu là tài khoản của chính mình
-        if ($user->id === auth()->id()) {
+        if ($user->id === $userauth->id) {
             return redirect()->route('admin.users.index')->with('error', 'Bạn không thể xóa chính mình.');
         }
 

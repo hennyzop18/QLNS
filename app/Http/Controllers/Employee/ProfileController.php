@@ -18,13 +18,13 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
-        $employee = $user->employee()->first(); // Lấy employee relationship
+        $employee = $user->employee; // Lấy employee relationship
 
         if (!$employee) {
             Auth::logout();
             return redirect('/login')->with('error', 'Không tìm thấy thông tin nhân viên.');
         }
-        return view('employee.profile.edit', compact('employee', 'user'));
+        return view('profile.edit', compact('employee', 'user'));
     }
 
     /**
@@ -62,5 +62,9 @@ class ProfileController extends Controller
 
         // Đặt session status để view hiển thị thông báo "Đã lưu."
         return redirect()->route('employee.profile.edit')->with('status', 'profile-updated');
+    }
+    public function showFaceRegistrationForm()
+    {
+        return view('profile.face_registration');
     }
 }

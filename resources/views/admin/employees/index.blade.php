@@ -81,7 +81,7 @@
                                             <span
                                                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                                                     @if($employee->status == 'active') bg-green-100 text-green-800 @elseif($employee->status == 'inactive') bg-yellow-100 text-yellow-800 @else bg-red-100 text-red-800 @endif">
-                                                {{ ucfirst($employee->status) }}
+                                                {{ ucfirst($employee->status == 'active' ? 'Hoạt động' : ($employee->status == 'inactive' ? 'Không hoạt động' : ($employee->status == 'terminated' ? 'Đã chấm dứt' : 'N/A'))) }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

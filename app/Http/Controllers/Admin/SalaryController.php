@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB; // Sử dụng transaction
 use App\Http\Requests\StoreSalaryRequest; // Sử dụng Form Request
 use App\Http\Requests\UpdateSalaryRequest; // Sử dụng Form Request
 use App\Models\WorkSchedule; // Có thể cần để tính công
+use Illuminate\Support\Facades\Log;
 
 class SalaryController extends Controller
 {
@@ -146,7 +147,7 @@ class SalaryController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error creating/updating salary batch: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            Log::error('Error creating/updating salary batch: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return redirect()->route('admin.salaries.create')->with('error', 'Lỗi tạo bảng lương: ' . $e->getMessage());
         }
     }

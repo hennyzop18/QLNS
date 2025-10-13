@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash; // Thêm Hash
 use Illuminate\Support\Str; // Thêm Str
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule; // Thêm Rule
+use Illuminate\Support\Facades\Log;
 
 class EmployeeController extends Controller
 {
@@ -168,7 +169,7 @@ class EmployeeController extends Controller
             DB::rollBack();
 
             // Log lỗi để debug
-            \Log::error('Error updating employee: ' . $e->getMessage());
+            Log::error('Error updating employee: ' . $e->getMessage());
 
             // Redirect về form edit với thông báo lỗi chung
             // return redirect()->back()->with('error', 'Đã xảy ra lỗi trong quá trình cập nhật. Vui lòng thử lại.');

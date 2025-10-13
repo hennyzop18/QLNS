@@ -57,11 +57,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    
+    public function faceDescriptors()
+    {
+        // Giả sử mỗi user chỉ có 1 khuôn mặt đăng ký
+        return $this->hasOne(FaceDescriptor::class, 'user_id', 'id');
+    }
+
+    
 
     // Quan hệ: Một User có thể là một Employee
     public function employee()
     {
-        return $this->belongsTo(Employee::class); // Hoặc hasOne nếu employee_id trên users
+        return $this->belongsTo(Employee::class, 'employee_id', 'id');// Hoặc hasOne nếu employee_id trên users
     }
 
     // Helper kiểm tra role

@@ -15,7 +15,6 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
 </head>
 
 <body class="font-sans antialiased">
@@ -33,10 +32,10 @@
                     <nav class="space-y-2">
                         {{-- Link Dashboard (nếu có) --}}
                         {{-- <a href="{{ route('employee.dashboard') }}" ...></a> --}}
-                        <a href="{{ route('employee.attendance.create') }}"
+                        {{-- <a href="{{ route('employee.attendance.create') }}"
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('employee.attendance.create') ? 'bg-gray-200 font-semibold' : '' }}">
                             <span class="mr-2">✅</span> Chấm công
-                        </a>
+                        </a> --}}
                         <a href="{{ route('employee.attendance.history') }}"
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('employee.attendance.history') ? 'bg-gray-200 font-semibold' : '' }}">
                             <span class="mr-2">📜</span> Lịch sử chấm công
@@ -44,6 +43,14 @@
                         <a href="{{ route('employee.profile.edit') }}"
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('employee.profile.edit') ? 'bg-gray-200 font-semibold' : '' }}">
                             <span class="mr-2">👤</span> Thông tin cá nhân
+                        </a>
+                        <a href="{{ route('employee.schedule.index') }}"
+                            class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('employee.schedule.*') ? 'bg-gray-200 font-semibold' : '' }}">
+                            <span class="mr-2">🗓️</span> Đăng ký lịch
+                        </a>
+                        <a href="{{ route('employee.face.register.form') }}"
+                            class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('employee.profile.edit') ? 'bg-gray-200 font-semibold' : '' }}">
+                            <span class="mr-2">👤</span> Đăng ký FaceID
                         </a>
                         <a href="{{ route('logout') }}"
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md"

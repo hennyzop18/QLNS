@@ -78,7 +78,7 @@
                                              {{-- Status badge --}}
                                              @if($attendance->status)
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $attendance->status == 'present' ? 'bg-green-100 text-green-800' : ($attendance->status == 'late' ? 'bg-yellow-100 text-yellow-800' : ($attendance->status == 'absent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
-                                                    {{ ucfirst($attendance->status) }}
+                                                    {{ ucfirst($attendance->status == 'present' ? 'Có mặt' : ($attendance->status == 'late' ? 'Đi trễ' : ($attendance->status == 'absent' ? 'Vắng' : 'N/A'))) }}
                                                 </span>
                                              @endif
                                          </td>

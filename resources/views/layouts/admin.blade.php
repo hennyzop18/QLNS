@@ -55,6 +55,10 @@
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('admin.work-schedules.*') ? 'bg-gray-200 font-semibold' : '' }}">
                             <span class="mr-2">⏰</span> Ca làm việc
                         </a>
+                        <a href="{{ route('admin.schedule_approvals.index') }}"
+                            class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('admin.schedule_approvals.*') ? 'bg-gray-200 font-semibold' : '' }}">
+                            <span class="mr-2">✔️</span> Duyệt Lịch Đăng Ký
+                        </a>
                         <a href="{{ route('admin.attendances.index') }}"
                             class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-700 rounded-md {{ request()->routeIs('admin.attendances.*') ? 'bg-gray-200 font-semibold' : '' }}">
                             <span class="mr-2">✅</span> Chấm công
