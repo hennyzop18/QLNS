@@ -25,27 +25,36 @@ class KioskApiController extends Controller
             // 'mac_address' => 'nullable|string', // Tùy chọn: có thể thêm xác thực MAC
         ]);
 
-        $receivedSsid = $validated['ssid'];
-        $allowedSsids = config('hr.allowed_office_ssids', []); // Lấy danh sách SSID từ config
+        $receivedSsid = trim($validated['ssid']);
+        $allowedSsids = array_map('trim', config('hr.allowed_office_ssids', [])); 
 
-        // 2. Kiểm tra xem SSID nhận được có nằm trong danh sách cho phép không
-        if (!in_array($receivedSsid, $allowedSsids)) {
+        // 2. Kiểm tra (không phân biệt hoa thường và bỏ qua khoảng trắng thừa)
+        $isAllowed = false;
+        foreach ($allowedSsids as $allowed) {
+            if (strcasecmp($receivedSsid, $allowed) === 0) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
             Log::warning('Kiosk token request denied: Invalid SSID.', [
                 'received_ssid' => $receivedSsid,
+                'allowed_ssids' => $allowedSsids,
                 'request_ip' => $request->ip(),
             ]);
             
             return response()->json([
                 'message' => 'Yêu cầu bị từ chối. Thiết bị không kết nối đúng mạng Wi-Fi của văn phòng.',
-            ], 403); // 403 Forbidden
+            ], 403);
         }
 
         // 3. Nếu mọi thứ hợp lệ, tạo và trả về token
         $token = Str::random(40);
         $cacheKey = 'kiosk_otp_' . $token;
         
-        // Lưu token vào cache, hiệu lực 60 giây
-        Cache::put($cacheKey, true, now()->addSeconds(3600));
+        // Lưu token vào cache, hiệu lực 120 giây (đủ thời gian tải model AI và nhận diện)
+        Cache::put($cacheKey, true, now()->addSeconds(120));
 
         Log::info('Kiosk token granted successfully.', [
             'ssid' => $receivedSsid,

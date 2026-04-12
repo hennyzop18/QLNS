@@ -80,8 +80,8 @@
 | Chức năng | Mô tả |
 |---|---|
 | **Xác thực mạng WiFi** | Kiểm tra SSID WiFi hiện tại — chỉ cho phép từ mạng nội bộ văn phòng |
-| **Lấy OTP Token** | Gọi API backend để lấy token tạm thời (hiệu lực 60 giây) |
-| **Mở trang Kiosk** | Tự động mở trình duyệt đến trang chấm công kèm token |
+| **Lấy OTP Token** | Gọi API backend để lấy token tạm thời (hiệu lực 120 giây) |
+| **Mở trang Kiosk** | Tự động mở trình duyệt đến trang chấm công kèm token — Token tự xóa khỏi URL sau khi trang load |
 | **Nhận diện khuôn mặt** | Trang kiosk web dùng `face-api.js` để nhận diện và ghi nhận chấm công |
 
 ---
@@ -136,6 +136,11 @@ DB_DATABASE=qlnhansutest
 DB_USERNAME=root
 DB_PASSWORD=
 ```
+
+```qlnhansutest\config\hr.php
+thêm allowed_office_ips = ip máy
+thêm allowed_office_ssids = tên mạng đang sử dụng .
+``` 
 
 #### Bước 3: Khởi động Docker
 
@@ -219,7 +224,7 @@ Lệnh này sẽ chạy đồng thời:
 
 #### Yêu Cầu
 
-- **macOS** (app dùng `system_profiler` để đọc SSID WiFi — chỉ hoạt động trên macOS)
+- **macOS / Windows / Linux** (macOS dùng `system_profiler`, Windows/Linux dùng `node-wifi`)
 - Web App (`qlnhansutest`) phải đang **chạy** trên `http://localhost:8000`
 
 #### Cài đặt
@@ -283,7 +288,7 @@ Người dùng truy cập http://localhost:8000
         │  4. POST /api/kiosk/request-token ──► │                              │
         │       { ssid: "OfficeWiFi" }          │                              │
         │                                       │ Kiểm tra SSID hợp lệ?       │
-        │                                       │ → Tạo OTP Token (60s)        │
+        │                                       │ → Tạo OTP Token (120s)       │
         │  5. ◄── { otp_token: "abc123" }       │                              │
         │                                       │                              │
         │  6. Mở trình duyệt:                   │                              │
@@ -420,10 +425,33 @@ kiosk-helper-app/
 
 ---
 
+## 🐛 Troubleshooting — Các Lỗi Thường Gặp
+
+### Kiosk Helper App
+
+| Lỗi | Nguyên nhân | Cách fix |
+|---|---|---|
+| `spawn airport ENOENT` | `airport` bị Apple xóa từ macOS Ventura trở đi | ✅ Đã fix: code tự dùng `system_profiler` trên macOS |
+| `Thất bại: Không kết nối đúng mạng Wi-Fi` | SSID chưa có trong `hr.php` | Thêm tên WiFi chính xác vào `allowed_office_ssids` |
+| `Phiên không hợp lệ` | `replaceState()` xóa token trước khi JS đọc | ✅ Đã fix: `replaceState` chạy trong `window.addEventListener('load')` |
+| Token hết hạn quá nhanh | TTL quá ngắn | Tăng giây trong `Cache::put($key, true, now()->addSeconds(120))` |
+| Không lấy được SSID khi dùng LAN cáp | LAN không có SSID | Dùng WiFi thay cho cáp mạng khi chạy Kiosk |
+
+### Docker / Backend
+
+| Lỗi | Nguyên nhân | Cách fix |
+|---|---|---|
+| Container `app` crash ngay sau khi up | DB chưa sẵn sàng khi migrate | `entrypoint.sh` tự retry, hoặc chạy lại `docker compose up` |
+| `composer install` chưa chạy | Docker build không tự install | Chạy thủ công: `docker compose exec app composer install` |
+| `php artisan migrate` thất bại | DB config sai trong `.env` | Kiểm tra `DB_HOST=db`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` |
+| Vite không hot-reload | Container `node` chưa up | Chạy: `docker compose up node` hoặc `docker compose exec node npm run dev` |
+
+---
+
 ## 📝 Ghi Chú
 
 > [!NOTE]
-> **Kiosk Helper App** hiện chỉ hỗ trợ **macOS** vì sử dụng lệnh `system_profiler SPAirPortDataType` để đọc SSID WiFi. Trên Windows/Linux cần điều chỉnh lệnh tương ứng.
+> **Kiosk Helper App** hỗ trợ đa nền tảng: **macOS** dùng `system_profiler SPAirPortDataType`, **Windows/Linux** dùng thư viện `node-wifi`. App tự phát hiện OS và chọn phương thức phù hợp.
 
 > [!IMPORTANT]
 > Sau khi chạy `php artisan storage:link`, các file ảnh đại diện của nhân viên sẽ được phục vụ tại `http://localhost:8000/storage/avatars/`.

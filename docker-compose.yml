@@ -11,6 +11,8 @@ services:
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - ./:/var/www/html
+    depends_on:
+      - db
     networks:
       - laravel-network
 
