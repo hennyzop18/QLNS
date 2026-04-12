@@ -36,11 +36,18 @@ RUN mkdir -p /var/www/html/storage/framework/sessions \
              /var/www/html/storage/logs \
              /var/www/html/bootstrap/cache
 
-# 2. Bây giờ mới thay đổi quyền sở hữu
+# 2. Thay đổi quyền sở hữu cho thư mục app
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose cổng 9000 cho PHP-FPM
 EXPOSE 9000
+
+# Chép file entrypoint mới vào container và trao quyền thực thi
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Gắn ENTRYPOINT tự động
+ENTRYPOINT ["entrypoint.sh"]
 
 # Lệnh mặc định khi container khởi chạy
 CMD ["php-fpm"]

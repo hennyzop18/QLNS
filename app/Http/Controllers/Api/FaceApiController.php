@@ -118,40 +118,64 @@ class FaceApiController extends Controller
         ->whereDate('date', $today->toDateString())
         ->first();
 
-    // --- Xử lý Check-out (giữ nguyên) ---
-    if ($todaysAttendance && $todaysAttendance->check_in_time && !$todaysAttendance->check_out_time) {
-        $todaysAttendance->update(['check_out_time' => $now]);
-        $action = 'Check-out';
-    } 
-    // --- Xử lý Check-in với LOGIC MỚI ---
-    else {
+    // --- Xử lý Chấm Công (LOGIC MỚI THEO YÊU CẦU) ---
+    if ($todaysAttendance) {
+        // ĐÃ CÓ CHECK-IN -> Đây là các lần chấm tiếp theo trong ngày -> Luôn cập nhật CHECK-OUT
+        $todaysAttendance->check_out_time = $now;
+
         $workSchedule = $employee->activeWorkScheduleOn($today);
-        $status = 'present'; // Mặc định là 'present' nếu không có lịch
+        if ($workSchedule) {
+            $endTime = Carbon::parse($today->toDateString() . ' ' . $workSchedule->end_time);
+            
+            // Xử lý nếu ca làm việc kéo qua đêm
+            if ($endTime->lt(Carbon::parse($today->toDateString() . ' ' . $workSchedule->start_time))) {
+                $endTime->addDay();
+            }
+
+            // Nếu về sớm hơn thời gian kết thúc QUÁ 15 phút -> Hủy thành Vắng mặt
+            if ($now->copy()->addMinutes(15)->lt($endTime)) {
+                $todaysAttendance->status = 'absent';
+                Log::info("FaceID Check-out: Employee {$employee->id} marked as ABSENT due to leaving > 15 mins early.");
+            }
+        }
+
+        $todaysAttendance->save();
+        $action = 'Check-out (Cập nhật)';
+    } 
+    else {
+        // CHƯA CÓ CHECK-IN -> Lần đầu tiên chấm trong ngày -> Ghi nhận CHECK-IN
+        $workSchedule = $employee->activeWorkScheduleOn($today);
+        $status = 'present'; // Mặc định nếu không có lịch làm việc
         
         if ($workSchedule) {
-            // Kiểm tra theo thứ tự ưu tiên: Vắng -> Trễ -> Đúng giờ
-            if ($workSchedule->isAbsent($now)) {
+            $startTime = Carbon::parse($today->toDateString() . ' ' . $workSchedule->start_time);
+            
+            // Nếu đi trễ QUÁ 15 phút -> Vắng mặt
+            if ($now->copy()->subMinutes(15)->gt($startTime)) {
                 $status = 'absent';
-                Log::info("FaceID Check-in: Employee {$employee->id} marked as ABSENT.", ['check_in' => $now->toTimeString()]);
+                Log::info("FaceID Check-in: Employee {$employee->id} marked as ABSENT due to > 15 mins late.");
             }
-            elseif ($workSchedule->isLate($now)) {
+            // Nếu đi trễ nhưng TRONG KHOẢNG 15 phút -> Trễ (late)
+            elseif ($now->gt($startTime)) {
                 $status = 'late';
-                Log::info("FaceID Check-in: Employee {$employee->id} marked as LATE.", ['check_in' => $now->toTimeString()]);
+                Log::info("FaceID Check-in: Employee {$employee->id} marked as LATE (within 15 mins tolerance).");
             }
-            // Mặc định, nếu không vắng và không trễ, coi như là 'present'
-            // Bao gồm cả trường hợp đến sớm (trước -5 phút) theo logic hiện tại
+            // Nằm ở mức bằng hoặc trước giờ vào làm -> Đúng giờ (present)
             else {
                 $status = 'present';
-                Log::info("FaceID Check-in: Employee {$employee->id} marked as PRESENT.", ['check_in' => $now->toTimeString()]);
+                Log::info("FaceID Check-in: Employee {$employee->id} marked as PRESENT.");
             }
         } else {
             Log::warning("FaceID Check-in: Employee {$employee->id} has no schedule. Defaulted to 'present'.");
         }
 
-        Attendance::updateOrCreate(
-            ['employee_id' => $employee->id, 'date' => $today->toDateString()],
-            ['check_in_time' => $now, 'status' => $status, 'check_out_time' => null]
-        );
+        Attendance::create([
+            'employee_id' => $employee->id,
+            'date' => $today->toDateString(),
+            'check_in_time' => $now,
+            'status' => $status,
+            'check_out_time' => null
+        ]);
         $action = 'Check-in';
     }
     

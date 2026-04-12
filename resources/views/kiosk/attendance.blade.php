@@ -56,6 +56,7 @@
         .status-ok { color: #2ecc71; }
         .status-error { color: #e74c3c; }
     </style>
+    {{-- Token sẽ được đọc bởi kiosk_attendance.js trước, KHÔNG xóa URL ở đây --}}
 </head>
 <body>
     <div id="video-container">
@@ -66,5 +67,15 @@
     </div>
     
     @vite('resources/js/kiosk_attendance.js')
+
+    {{-- Chạy SAU khi kiosk_attendance.js đã đọc xong token từ URL --}}
+    <script>
+        // Xóa token khỏi URL sau khi trang đã load xong để tránh lộ qua Browser History
+        window.addEventListener('load', function() {
+            if (window.history.replaceState) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
 </body>
 </html>
