@@ -45,10 +45,15 @@
                         </div>
                     </form>
 
-                     <div class="mb-4 flex justify-end">
+                     <div class="mb-4 flex justify-end gap-3">
+                         <a href="{{ route('admin.salaries.export-excel', request()->all()) }}">
+                             <x-secondary-button class="bg-green-50 text-green-700 border-green-200">
+                                 📊 {{ __('Xuất Excel Báo Cáo') }}
+                             </x-secondary-button>
+                         </a>
                          <a href="{{ route('admin.salaries.create') }}">
                              <x-primary-button>
-                                {{ __('Tạo Bảng Lương Kỳ Mới') }}
+                                {{ __('Tạo Bảng Lương') }}
                              </x-primary-button>
                          </a>
                     </div>
@@ -115,14 +120,16 @@
                                             @if($salary->status == 'pending')
                                                 <a href="{{ route('admin.salaries.edit', $salary) }}" class="text-blue-600 hover:text-blue-900">Sửa</a>
                                                  {{-- Form Đánh dấu đã thanh toán --}}
-                                                <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block" onsubmit="return confirm('Xác nhận đã thanh toán lương cho nhân viên này?');">
+                                                <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block confirm-form" 
+                                                    data-title="Xác nhận thanh toán?" data-text="Bạn xác nhận đã thanh toán lương cho {{ $salary->employee->full_name }}?">
                                                     @csrf
                                                     @method('PUT')
                                                     <input type="hidden" name="mark_as_paid" value="1">
                                                     <button type="submit" class="text-green-600 hover:text-green-900 text-xs font-semibold">Thanh Toán</button>
                                                 </form>
                                                  {{-- Form Hủy bỏ --}}
-                                                <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block" onsubmit="return confirm('Bạn chắc chắn muốn hủy bảng lương này?');">
+                                                <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block confirm-form"
+                                                    data-title="Hủy bảng lương?" data-text="Bạn chắc chắn muốn hủy bảng lương của {{ $salary->employee->full_name }}?">
                                                      @csrf
                                                      @method('PUT')
                                                      <input type="hidden" name="mark_as_cancelled" value="1">

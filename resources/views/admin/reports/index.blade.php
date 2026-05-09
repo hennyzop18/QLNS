@@ -29,6 +29,12 @@
                                 Báo cáo tổng hợp lương
                             </a>
                         </li>
+                        <li>
+                            <a href="{{ route('admin.reports.attendance-department') }}"
+                                class="text-blue-600 hover:text-blue-800 hover:underline">
+                                Báo cáo tỷ lệ chuyên cần theo phòng ban (Mới)
+                            </a>
+                        </li>
                         {{-- Thêm các link báo cáo khác --}}
                     </ul>
                 </div>

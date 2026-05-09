@@ -20,9 +20,9 @@
                             <div>
                                 <!-- Mã Nhân Viên -->
                                 <div>
-                                    <x-input-label for="employee_code" value="{{ __('Mã Nhân Viên') }}" />
-                                    <x-text-input id="employee_code" class="block mt-1 w-full" type="text"
-                                        name="employee_code" :value="old('employee_code')" required autofocus />
+                                    <x-input-label for="employee_code" value="{{ __('Mã Nhân Viên (Tự động)') }}" />
+                                    <x-text-input id="employee_code" class="block mt-1 w-full bg-gray-100" type="text"
+                                        name="employee_code" :value="old('employee_code')" placeholder="Hệ thống tự động tạo" readonly />
                                     <x-input-error :messages="$errors->get('employee_code')" class="mt-2" />
                                 </div>
 
@@ -88,7 +88,7 @@
                                 <!-- Địa chỉ -->
                                 <div class="mt-4">
                                     <x-input-label for="address" value="{{ __('Địa chỉ') }}" />
-                                    <textarea id="address" name="address" rows="3"
+                                    <textarea id="address" name="address" rows="4"
                                         class="block mt-1 w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">{{ old('address') }}</textarea>
                                     <x-input-error :messages="$errors->get('address')" class="mt-2" />
                                 </div>

@@ -15,9 +15,15 @@ use App\Http\Controllers\Admin\RewardDisciplineController as AdminRewardDiscipli
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\EmployeeScheduleController;
+use App\Http\Controllers\Admin\LeaveRequestController as AdminLeaveRequestController;
+use App\Http\Controllers\Admin\OvertimeRequestController as AdminOvertimeRequestController;
+use App\Http\Controllers\Admin\AttendanceAdjustmentController as AdminAttendanceAdjustmentController;
 // --- Employee Controllers ---
 use App\Http\Controllers\Employee\EmployeeAttendanceController as EmployeeAttendanceController;
 use App\Http\Controllers\Employee\ProfileController as EmployeeProfileController;
+use App\Http\Controllers\Employee\LeaveRequestController as EmployeeLeaveRequestController;
+use App\Http\Controllers\Employee\OvertimeRequestController as EmployeeOvertimeRequestController;
+use App\Http\Controllers\Employee\AttendanceAdjustmentController as EmployeeAttendanceAdjustmentController;
 use App\Http\Controllers\KioskController; 
 use App\Http\Controllers\Api\FaceApiController; 
 use App\Http\Controllers\Employee\ScheduleRegistrationController;
@@ -79,12 +85,18 @@ Route::middleware(['auth', 'admin']) // Yêu cầu đăng nhập và là admin
         });
 
         // Quản lý Chức vụ (CRUD)
+        Route::get('positions/trash', [AdminPositionController::class, 'trash'])->name('positions.trash');
+        Route::post('positions/{id}/restore', [AdminPositionController::class, 'restore'])->name('positions.restore');
         Route::resource('positions', AdminPositionController::class);
 
         // Quản lý Phòng Ban (CRUD)
+        Route::get('departments/trash', [AdminDepartmentController::class, 'trash'])->name('departments.trash');
+        Route::post('departments/{id}/restore', [AdminDepartmentController::class, 'restore'])->name('departments.restore');
         Route::resource('departments', AdminDepartmentController::class);
 
         // Quản lý Ca làm việc (CRUD)
+        Route::get('work-schedules/trash', [AdminWorkScheduleController::class, 'trash'])->name('work-schedules.trash');
+        Route::post('work-schedules/{id}/restore', [AdminWorkScheduleController::class, 'restore'])->name('work-schedules.restore');
         Route::resource('work-schedules', AdminWorkScheduleController::class);
 
         // Quản lý Chấm công (Admin xem/sửa)
@@ -96,6 +108,24 @@ Route::middleware(['auth', 'admin']) // Yêu cầu đăng nhập và là admin
     
         // Quản lý Lương (CRUD)
         Route::resource('salaries', AdminSalaryController::class);
+        Route::get('salaries-export', [AdminSalaryController::class, 'exportExcel'])->name('salaries.export-excel');
+        Route::get('salaries/{salary}/export-pdf', [AdminSalaryController::class, 'exportPdf'])->name('salaries.export-pdf');
+        Route::post('salaries/{salary}/send-email', [AdminSalaryController::class, 'sendEmail'])->name('salaries.send-email');
+
+        // Quản lý Nghỉ phép
+        Route::resource('leave-requests', AdminLeaveRequestController::class);
+        Route::patch('leave-requests/{leave_request}/approve', [AdminLeaveRequestController::class, 'approve'])->name('leave-requests.approve');
+        Route::patch('leave-requests/{leave_request}/reject', [AdminLeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+
+        // Quản lý Tăng ca
+        Route::resource('overtime-requests', AdminOvertimeRequestController::class);
+        Route::patch('overtime-requests/{overtime_request}/approve', [AdminOvertimeRequestController::class, 'approve'])->name('overtime-requests.approve');
+        Route::patch('overtime-requests/{overtime_request}/reject', [AdminOvertimeRequestController::class, 'reject'])->name('overtime-requests.reject');
+
+        // Quản lý Giải trình chấm công
+        Route::resource('attendance-adjustments', AdminAttendanceAdjustmentController::class);
+        Route::patch('attendance-adjustments/{adjustment}/approve', [AdminAttendanceAdjustmentController::class, 'approve'])->name('attendance-adjustments.approve');
+        Route::patch('attendance-adjustments/{adjustment}/reject', [AdminAttendanceAdjustmentController::class, 'reject'])->name('attendance-adjustments.reject');
         // Có thể thêm route riêng cho các hành động đặc biệt như 'mark_as_paid' nếu cần
         // Route::patch('salaries/{salary}/pay', [AdminSalaryController::class, 'markAsPaid'])->name('salaries.pay');
     
@@ -113,6 +143,7 @@ Route::middleware(['auth', 'admin']) // Yêu cầu đăng nhập và là admin
             Route::get('/employee-statistics', [AdminReportController::class, 'employeeStatistics'])->name('employee-statistics');
             Route::get('/attendance-report', [AdminReportController::class, 'attendanceReport'])->name('attendance-report');
             Route::get('/salary-report', [AdminReportController::class, 'salaryReport'])->name('salary-report');
+            Route::get('/attendance-department', [AdminReportController::class, 'attendanceDepartmentStats'])->name('attendance-department');
         });
 
          Route::prefix('schedule-approvals')->name('schedule_approvals.')->group(function() {
@@ -156,6 +187,20 @@ Route::middleware(['auth', 'employee']) // Yêu cầu đăng nhập và là empl
             // Xử lý việc lưu/cập nhật lịch đăng ký
             Route::post('/', [ScheduleRegistrationController::class, 'store'])->name('store');
         });
+
+        // Đăng ký nghỉ phép
+        Route::get('leaves', [EmployeeLeaveRequestController::class, 'index'])->name('leaves.index');
+        Route::get('leaves/create', [EmployeeLeaveRequestController::class, 'create'])->name('leaves.create');
+        Route::post('leaves', [EmployeeLeaveRequestController::class, 'store'])->name('leaves.store');
+
+        // Đăng ký tăng ca
+        Route::get('overtime', [EmployeeOvertimeRequestController::class, 'index'])->name('overtime.index');
+        Route::get('overtime/create', [EmployeeOvertimeRequestController::class, 'create'])->name('overtime.create');
+        Route::post('overtime', [EmployeeOvertimeRequestController::class, 'store'])->name('overtime.store');
+
+        // Giải trình chấm công
+        Route::get('attendance/{attendance}/adjust', [EmployeeAttendanceAdjustmentController::class, 'create'])->name('attendance.adjust.create');
+        Route::post('attendance/{attendance}/adjust', [EmployeeAttendanceAdjustmentController::class, 'store'])->name('attendance.adjust.store');
 
 
     }); // Kết thúc nhóm route Employee

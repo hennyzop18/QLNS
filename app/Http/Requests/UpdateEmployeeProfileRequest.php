@@ -27,12 +27,13 @@ class UpdateEmployeeProfileRequest extends FormRequest
 
         return [
             // --- Phần Employee ---
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
             'phone_number' => 'nullable|string|max:20',
             'personal_email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:500',
 
             // --- Phần User ---
-            'name' => 'required|string|max:255',
             'email' => [
                 'required',
                 'string',

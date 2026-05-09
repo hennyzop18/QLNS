@@ -7,7 +7,8 @@ return [
         '192.168.23.161',
         '192.168.23.1',
         '192.168.1.88',
-        '192.168.1.5'
+        '192.168.1.5',
+        '192.168.1.94'
     ],
     // --- THÊM DÒNG NÀY ---
     'allowed_office_ssids' => [
@@ -17,6 +18,7 @@ return [
         'helu',
         'Candles Cafe',
         '<redacted>',
-        'NGUYEN THUC'
+        'NGUYEN THUC',
+        'Mai Cafe',
     ],
 ];

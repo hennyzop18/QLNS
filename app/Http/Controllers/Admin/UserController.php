@@ -19,24 +19,33 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // Lọc theo role, tìm kiếm name/email
         $search = $request->input('search');
-        $role = $request->input('role');
+        $role   = $request->input('role');
 
-        $query = User::with('employee:id,first_name,last_name') // Lấy thông tin cơ bản của NV liên kết
-            ->latest();
+        $query = User::with(['employee' => function($q) {
+            $q->select('id', 'first_name', 'last_name', 'employee_code', 'avatar', 'personal_email', 'phone_number', 'department_id', 'position_id')
+              ->with(['department:id,name', 'position:id,name']);
+        }])->latest();
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->where('name', 'LIKE', "%{$search}%")
+                    ->orWhere('email', 'LIKE', "%{$search}%");
             });
         }
+
         if ($role) {
             $query->where('role', $role);
         }
 
         $users = $query->paginate(15);
+
+        // Chuẩn bị dữ liệu cho Popup
+        $users->each(function($user) {
+            if ($user->employee) {
+                $user->employee->avatar_url = $user->employee->avatar ? asset('storage/' . $user->employee->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($user->employee->full_name) . '&color=7F9CF5&background=EBF4FF';
+            }
+        });
 
         return view('admin.users.index', compact('users', 'search', 'role'));
     }

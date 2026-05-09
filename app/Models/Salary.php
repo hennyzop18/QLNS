@@ -77,4 +77,39 @@ class Salary extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+
+    // Accessor cho Tháng
+    public function getMonthAttribute()
+    {
+        return $this->pay_period_start ? $this->pay_period_start->month : null;
+    }
+
+    // Accessor cho Năm
+    public function getYearAttribute()
+    {
+        return $this->pay_period_start ? $this->pay_period_start->year : null;
+    }
+
+    // Accessor cho Tổng Thu Nhập (Gross) - Cải tiến để tránh bị 0 VNĐ
+    public function getTotalGrossAttribute()
+    {
+        $base = 0;
+        if ($this->salary_type === 'hourly') {
+            $base = (($this->total_actual_hours ?? 0) + ($this->ot_hours ?? 0) * 1.5) * ($this->hourly_rate_snapshot ?? 0);
+        } elseif ($this->salary_type === 'override') {
+            $base = ($this->default_salary_override ?? 0);
+        } else {
+            // Với lương cố định, ưu tiên lấy prorated_salary (nếu > 0), nếu không thì lấy base_salary
+            $base = ($this->prorated_salary > 0) ? $this->prorated_salary : ($this->base_salary ?? 0);
+        }
+
+        return $base + ($this->taxable_allowances ?? 0) + ($this->nontaxable_allowances ?? 0) + ($this->bonus ?? 0);
+    }
+
+    // Accessor tính tổng các khoản khấu trừ
+    public function getTotalDeductionsAttribute()
+    {
+        return ($this->si_deduction ?? 0) + ($this->hi_deduction ?? 0) + ($this->ui_deduction ?? 0) 
+               + ($this->pit_tax ?? 0) + ($this->fines ?? 0) + ($this->late_fine ?? 0);
+    }
 }

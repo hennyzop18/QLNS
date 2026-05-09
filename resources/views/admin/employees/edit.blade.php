@@ -78,6 +78,17 @@
                                      <x-input-error :messages="$errors->get('dob')" class="mt-2" />
                                 </div>
 
+                                <!-- Trạng thái Nhân viên -->
+                                <div class="mt-4">
+                                    <x-input-label for="status" value="{{ __('Trạng thái') }}" />
+                                    <select name="status" id="status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                                        <option value="active" @selected(old('status', $employee->status) == 'active')>Hoạt động</option>
+                                        <option value="inactive" @selected(old('status', $employee->status) == 'inactive')>Tạm nghỉ</option>
+                                        <option value="terminated" @selected(old('status', $employee->status) == 'terminated')>Đã nghỉ việc</option>
+                                    </select>
+                                     <x-input-error :messages="$errors->get('status')" class="mt-2" />
+                                </div>
+
                             </div>
 
                             {{-- Cột 2 --}}
@@ -93,7 +104,7 @@
                                 <!-- Địa chỉ -->
                                 <div class="mt-4">
                                     <x-input-label for="address" value="{{ __('Địa chỉ') }}" />
-                                    <textarea id="address" name="address" rows="3"
+                                    <textarea id="address" name="address" rows="4"
                                         class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('address', $employee->address) }}</textarea>
                                      <x-input-error :messages="$errors->get('address')" class="mt-2" />
                                 </div>
@@ -146,17 +157,6 @@
                                     </select>
                                      <x-input-error :messages="$errors->get('department_id')" class="mt-2" />
                                 </div>
-
-                                 <!-- Trạng thái Nhân viên -->
-                                 <div class="mt-4">
-                                     <x-input-label for="status" value="{{ __('Trạng thái') }}" />
-                                     <select name="status" id="status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                         <option value="active" @selected(old('status', $employee->status) == 'active')>Hoạt động</option>
-                                         <option value="inactive" @selected(old('status', $employee->status) == 'inactive')>Tạm nghỉ</option>
-                                         <option value="terminated" @selected(old('status', $employee->status) == 'terminated')>Đã nghỉ việc</option>
-                                     </select>
-                                      <x-input-error :messages="$errors->get('status')" class="mt-2" />
-                                 </div>
 
                         </div>
                         </div>

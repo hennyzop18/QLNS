@@ -103,6 +103,8 @@ class SalaryController extends Controller
             $processedCount = 0;
 
             foreach ($employees as $employee) {
+                // Đồng bộ đơn nghỉ phép vào bảng chấm công để tính ngày công đúng
+                $this->syncLeavesToAttendance($employee->id, $payPeriodStart->toDateString(), $payPeriodEnd->toDateString());
 
                 // ═══════════════════════════════════════════════════════
                 // BƯỚC 1 — XÁC ĐỊNH CHẾ ĐỘ LƯƠNG & TÍNH GROSS
@@ -110,14 +112,14 @@ class SalaryController extends Controller
                 $taxableAllowances    = (float) ($employee->taxable_allowances    ?? 0);
                 $nontaxableAllowances = (float) ($employee->nontaxable_allowances ?? 0);
                 $dependents      = (int)   ($employee->dependents        ?? 0);
-                $insuranceSalary = (float) ($employee->insurance_salary ?? $employee->base_salary ?? 5_000_000);
+                $insuranceSalary = (float) ($employee->insurance_salary > 0 ? $employee->insurance_salary : ($employee->base_salary ?? 5000000));
 
                 // Số liệu chấm công trong kỳ
                 $attendanceStats = Attendance::where('employee_id', $employee->id)
                     ->whereBetween('date', [$payPeriodStart->toDateString(), $payPeriodEnd->toDateString()])
                     ->selectRaw("
-                        COUNT(CASE WHEN status IN ('present', 'late') THEN 1 END) as actual_days,
-                        COUNT(CASE WHEN status = 'absent' THEN 1 END)             as absent_days,
+                        COUNT(CASE WHEN status IN ('present', 'late') OR (status = 'leave' AND actual_hours > 0) THEN 1 END) as actual_days,
+                        COUNT(CASE WHEN status = 'absent' OR (status = 'leave' AND actual_hours = 0) THEN 1 END) as absent_days,
                         COUNT(CASE WHEN status = 'late' THEN 1 END)               as late_days,
                         COALESCE(SUM(actual_hours), 0)                            as total_hours
                     ")
@@ -128,55 +130,70 @@ class SalaryController extends Controller
                 $lateDays        = (int)   ($attendanceStats->late_days   ?? 0);
                 $totalHours      = (float) ($attendanceStats->total_hours ?? 0);
 
+                // Lấy chi tiết các đơn OT đã được phê duyệt trong kỳ
+                $approvedOts = \App\Models\OvertimeRequest::where('employee_id', $employee->id)
+                    ->where('status', 'approved')
+                    ->whereBetween('date', [$payPeriodStart->toDateString(), $payPeriodEnd->toDateString()])
+                    ->get();
+
+                $otSalaryTotal = 0;
+                $otHoursTotal  = $approvedOts->sum('hours');
+
                 // ── Chọn chế độ & tính gross ──────────────────────────
                 $salaryTypeSnapshot    = 'fixed';
                 $grossBase             = 0;
                 $proratedSalary        = 0;
                 $hourlyRateSnapshot    = null;
                 $defaultSalaryOverride = null;
-                $otHours               = 0; // Số giờ OT (tạm gán = 0, chờ admin duyệt/cập nhật qua form)
 
                 if ($overrideSalary !== null) {
-                    // ③ OVERRIDE — mức lương ghi đè đồng loạt từ admin
                     $salaryTypeSnapshot    = 'override';
-                    $grossBase             = $overrideSalary;
                     $defaultSalaryOverride = $overrideSalary;
                     $proratedSalary        = $overrideSalary;
-
+                    $grossBase             = $overrideSalary;
                 } elseif (($employee->salary_type ?? 'fixed') === 'hourly') {
-                    // ② HOURLY — tổng giờ thực tế × đơn giá giờ + OT
                     $salaryTypeSnapshot = 'hourly';
                     $hourlyRate         = (float) ($employee->hourly_rate ?? 0);
                     $hourlyRateSnapshot = $hourlyRate;
+                    $baseHourlySalary   = $totalHours * $hourlyRate;
                     
-                    // Lương giờ chuẩn
-                    $baseHourlySalary = $totalHours * $hourlyRate;
-                    // Lương giờ OT (Hệ số 1.5)
-                    $otSalary = $otHours * $hourlyRate * 1.5;
+                    // Tính OT theo hệ số cho nhân viên theo giờ
+                    foreach ($approvedOts as $ot) {
+                        $multiplier = $this->getOtMultiplier($ot->date);
+                        $otSalaryTotal += $ot->hours * $hourlyRate * $multiplier;
+                    }
                     
-                    $grossBase          = round($baseHourlySalary + $otSalary, 2);
+                    $grossBase          = round($baseHourlySalary + $otSalaryTotal, 2);
                     $proratedSalary     = $grossBase;
-
                 } else {
-                    // ① FIXED — lương cố định prorate theo ngày công thực tế (có tính OT ngày)
                     $salaryTypeSnapshot = 'fixed';
-                    $baseSalary         = (float) ($employee->base_salary ?? 5_000_000);
+                    $baseSalary         = (float) ($employee->base_salary ?? 5000000);
                     $dailyRate          = $STANDARD_WORK_DAYS > 0 ? $baseSalary / $STANDARD_WORK_DAYS : 0;
-                    
-                    if ($actualWorkDays > $STANDARD_WORK_DAYS) {
-                        $otDays = $actualWorkDays - $STANDARD_WORK_DAYS;
-                        $otSalary = $dailyRate * $otDays * 1.5; // Hệ số OT 1.5 cho ngày thường
-                        $proratedSalary = $baseSalary + $otSalary;
+                    $hourlyRate         = $dailyRate / 8; // Giả định 1 ngày công 8 tiếng
+
+                    // Tính lương theo ngày công
+                    if ($actualWorkDays >= $STANDARD_WORK_DAYS) {
+                        $extraDays = $actualWorkDays - $STANDARD_WORK_DAYS;
+                        $proratedSalary = $baseSalary + ($dailyRate * $extraDays * 1.5); // Công thêm tính 1.5x
                     } else {
                         $proratedSalary = $dailyRate * $actualWorkDays;
                     }
                     
-                    $proratedSalary     = round($proratedSalary, 2);
+                    // Tính OT theo hệ số cho nhân viên lương khoán
+                    foreach ($approvedOts as $ot) {
+                        $multiplier = $this->getOtMultiplier($ot->date);
+                        $otSalaryTotal += $ot->hours * $hourlyRate * $multiplier;
+                    }
+                    
+                    $proratedSalary     = round($proratedSalary + $otSalaryTotal, 2);
                     $grossBase          = $proratedSalary;
                 }
 
+                $otHours = $otHoursTotal;
+                $otSalary = $otSalaryTotal;
+
                 // ═══════════════════════════════════════════════════════
-                // BƯỚC 2 — THƯỞNG / KỶ LUẬT
+                // BƯỚC 2 — THƯỞNG, KỶ LUẬT & PHỤ CẤP
                 // ═══════════════════════════════════════════════════════
                 $rewards = (float) RewardDiscipline::where('employee_id', $employee->id)
                     ->where('type', 'reward')
@@ -188,14 +205,15 @@ class SalaryController extends Controller
                     ->whereBetween('date', [$payPeriodStart->toDateString(), $payPeriodEnd->toDateString()])
                     ->sum('amount');
 
+                // Tổng thu nhập chịu thuế (Trước bảo hiểm)
+                $taxableEarnings = $proratedSalary + $taxableAllowances + $rewards - $fines;
+
                 // ═══════════════════════════════════════════════════════
-                // BƯỚC 3 — GROSS = Lương tính + Phụ cấp + Thưởng
+                // BƯỚC 3 — TRÍCH ĐÓNG BẢO HIỂM (Mức đóng 10.5%)
                 // ═══════════════════════════════════════════════════════
                 $grossSalary = $grossBase + $taxableAllowances + $nontaxableAllowances + $rewards;
 
-                // ═══════════════════════════════════════════════════════
-                // BƯỚC 4 — BHXH / BHYT / BHTN (10.5% trên insurance_salary)
-                // ═══════════════════════════════════════════════════════
+                // Tính Bảo hiểm (Đảm bảo không bị bằng 0 nếu có lương đóng BH)
                 $siDeduction    = round($insuranceSalary * 0.08,  2);
                 $hiDeduction    = round($insuranceSalary * 0.015, 2);
                 $uiDeduction    = round($insuranceSalary * 0.01,  2);
@@ -219,6 +237,15 @@ class SalaryController extends Controller
                 $lateFine   = $lateDays * $LATE_FINE_PER_DAY;
                 $deductions = $totalInsurance + $pitTax;
                 $netSalary  = max(0, $grossSalary - $deductions - $fines - $lateFine);
+
+                // Xây dựng chuỗi ghi chú chi tiết OT để đối soát
+                $otDetailsList = [];
+                foreach ($approvedOts as $ot) {
+                    $m = $this->getOtMultiplier($ot->date);
+                    $type = ($m == 3.0) ? "Lễ" : (($m == 2.0) ? "Nghỉ" : "Thường");
+                    $otDetailsList[] = sprintf("%s (%sx %s): %sh", Carbon::parse($ot->date)->format('d/m'), $m, $type, $ot->hours);
+                }
+                $otBreakdown = !empty($otDetailsList) ? " | OT: " . implode(", ", $otDetailsList) : "";
 
                 // ═══════════════════════════════════════════════════════
                 // BƯỚC 7 — LƯU VÀO DATABASE
@@ -255,17 +282,16 @@ class SalaryController extends Controller
                         'net_salary'              => $netSalary,
                         'status'                  => 'pending',
                         'notes'                   => sprintf(
-                            "[%s] Kỳ %d/%d | %s | Gross: %s | BH: %s | PIT: %s | Net: %s | %s",
+                            "[%s] Kỳ %d/%d | %s | Gross: %s%s | BH: %s | Net: %s",
                             strtoupper($salaryTypeSnapshot),
                             $month, $year,
                             $salaryTypeSnapshot === 'hourly'
                                 ? "Giờ: {$totalHours}h × " . number_format($hourlyRateSnapshot) . "đ"
-                                : "Công: {$actualWorkDays}/{$STANDARD_WORK_DAYS} ngày",
+                                : "Công: {$actualWorkDays}/{$STANDARD_WORK_DAYS}",
                             number_format($grossSalary),
-                            number_format($deductions),
-                            number_format($pitTax),
-                            number_format($netSalary),
-                            now()->toDateTimeString()
+                            $otBreakdown,
+                            number_format($totalInsurance),
+                            number_format($netSalary)
                         ),
                     ]
                 );
@@ -344,6 +370,98 @@ class SalaryController extends Controller
         return round($tax, 2);
     }
 
+    /**
+     * Đồng bộ các đơn nghỉ phép đã duyệt sang bảng attendances.
+     */
+    /**
+     * Xác định hệ số nhân lương OT dựa trên ngày.
+     */
+    private function getOtMultiplier($date)
+    {
+        $dt = \Carbon\Carbon::parse($date);
+        
+        // 1. Kiểm tra ngày lễ (3.0x)
+        if ($this->isHoliday($dt)) {
+            return 3.0;
+        }
+
+        // 2. Kiểm tra cuối tuần (2.0x) - Giả định T7 và CN là ngày nghỉ
+        if ($dt->isWeekend()) {
+            return 2.0;
+        }
+
+        // 3. Ngày thường (1.5x)
+        return 1.5;
+    }
+
+    /**
+     * Kiểm tra ngày lễ Việt Nam (Cố định).
+     */
+    private function isHoliday($date)
+    {
+        $dayMonth = $date->format('d-m');
+        $year = $date->year;
+
+        // Danh sách ngày lễ dương lịch cố định
+        $holidays = [
+            '01-01', // Tết Dương lịch
+            '30-04', // Giải phóng miền Nam
+            '01-05', // Quốc tế lao động
+            '02-09', // Quốc khánh
+        ];
+
+        if (in_array($dayMonth, $holidays)) {
+            return true;
+        }
+
+        // Ghi chú: Với các ngày lễ âm lịch (Tết Nguyên Đán, Giỗ tổ Hùng Vương), 
+        // trong thực tế cần một bảng database hoặc thư viện chuyển đổi âm dương.
+        // Ở đây tạm thời tính các ngày lễ dương lịch chính.
+
+        return false;
+    }
+
+    private function syncLeavesToAttendance($employeeId, $startDate, $endDate)
+    {
+        $approvedLeaves = \App\Models\LeaveRequest::where('employee_id', $employeeId)
+            ->where('status', 'approved')
+            ->where(function($q) use ($startDate, $endDate) {
+                $q->whereBetween('start_date', [$startDate, $endDate])
+                  ->orWhereBetween('end_date', [$startDate, $endDate]);
+            })
+            ->get();
+
+        foreach ($approvedLeaves as $leave) {
+            $period = \Carbon\CarbonPeriod::create(
+                max($leave->start_date->toDateString(), $startDate),
+                min($leave->end_date->toDateString(), $endDate)
+            );
+
+            foreach ($period as $date) {
+                $dateStr = $date->toDateString();
+                
+                // Chỉ đồng bộ nếu chưa có chấm công hoặc đang là vắng mặt
+                $existing = Attendance::where('employee_id', $employeeId)
+                    ->where('date', $dateStr)
+                    ->first();
+
+                if (!$existing || $existing->status === 'absent') {
+                    Attendance::updateOrCreate(
+                        ['employee_id' => $employeeId, 'date' => $dateStr],
+                        [
+                            'status' => 'leave',
+                            'notes' => ($leave->reason ?: 'Nghỉ phép đã duyệt') . ' (Mã đơn: #' . $leave->id . ')',
+                            // Nếu nghỉ không lương thì actual_hours = 0
+                            'actual_hours' => ($leave->type !== 'unpaid') ? 8 : 0,
+                            'check_in_time' => $existing->check_in_time ?? null,
+                            'check_out_time' => $existing->check_out_time ?? null,
+                        ]
+                    );
+                }
+            }
+        }
+    }
+
 
 
     /**
@@ -351,8 +469,21 @@ class SalaryController extends Controller
      */
     public function show(Salary $salary)
     {
-        $salary->load('employee'); // Load thông tin nhân viên
-        return view('admin.salaries.show', compact('salary'));
+        $salary->load('employee.position', 'employee.department');
+        
+        // Lấy danh sách OT trong kỳ để hiển thị đối soát
+        $approvedOts = \App\Models\OvertimeRequest::where('employee_id', $salary->employee_id)
+            ->where('status', 'approved')
+            ->whereBetween('date', [$salary->pay_period_start, $salary->pay_period_end])
+            ->get();
+
+        // Gắn hệ số cho từng đơn OT để hiển thị ở View
+        $approvedOts->each(function($ot) {
+            $ot->multiplier = $this->getOtMultiplier($ot->date);
+            $ot->type_text = ($ot->multiplier == 3.0) ? "Ngày lễ" : (($ot->multiplier == 2.0) ? "Ngày nghỉ" : "Ngày thường");
+        });
+
+        return view('admin.salaries.show', compact('salary', 'approvedOts'));
     }
 
     /**
@@ -432,12 +563,52 @@ class SalaryController extends Controller
             return redirect()->route('admin.salaries.index')->with('error', 'Không thể xóa bảng lương đã thanh toán.');
         }
 
-        // Thay vì xóa, có thể cập nhật status thành 'cancelled'
-        // $salary->update(['status' => 'cancelled', 'notes' => ($salary->notes ?? '') . "\nCancelled by admin on " . now()->toDateTimeString()]);
-        // return redirect()->route('admin.salaries.index')->with('success', 'Đã hủy bỏ bảng lương.');
-
-        // Hoặc xóa hẳn
         $salary->delete();
         return redirect()->route('admin.salaries.index')->with('success', 'Xóa bảng lương thành công.');
     }
+
+    /**
+     * Xuất phiếu lương dạng PDF.
+     */
+    public function exportPdf(Salary $salary)
+    {
+        $salary->load(['employee.department', 'employee.position']);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.payslip', compact('salary'));
+        return $pdf->download('payslip_' . $salary->employee->employee_code . '_' . $salary->month . '_' . $salary->year . '.pdf');
+    }
+
+    /**
+     * Gửi phiếu lương qua email.
+     */
+    public function sendEmail(Salary $salary)
+    {
+        $salary->load(['employee.user', 'employee.department', 'employee.position']);
+        
+        if (!$salary->employee->user || !$salary->employee->user->email) {
+            return redirect()->back()->with('error', 'Nhân viên này không có địa chỉ email hoặc chưa có tài khoản người dùng.');
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($salary->employee->user->email)->send(new \App\Mail\PayslipMail($salary));
+            return redirect()->back()->with('success', 'Đã gửi email phiếu lương tới ' . $salary->employee->user->email);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Lỗi gửi mail lương: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Lỗi khi gửi email: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Xuất báo cáo lương Excel theo tháng/năm.
+     */
+    public function exportExcel(\Illuminate\Http\Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+        
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\SalariesExport($month, $year), 
+            "Bao_cao_luong_{$month}_{$year}.xlsx"
+        );
+    }
+
 }

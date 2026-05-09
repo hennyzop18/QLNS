@@ -33,10 +33,18 @@
                                 <x-text-input id="employee_code" class="block mt-1 w-full bg-gray-100" type="text" :value="$employee->employee_code" disabled readonly />
                             </div>
 
-                            <!-- Họ và tên (Không sửa) -->
-                            <div class="mt-4">
-                                <x-input-label :value="__('Họ và tên')" />
-                                <x-text-input class="block mt-1 w-full bg-gray-100" type="text" :value="$employee->last_name .' '. $employee->first_name" disabled readonly />
+                            <!-- Họ và tên (Cho phép sửa) -->
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div>
+                                    <x-input-label for="last_name" :value="__('Họ')" />
+                                    <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $employee->last_name)" required oninput="updateDisplayName()" />
+                                    <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
+                                </div>
+                                <div>
+                                    <x-input-label for="first_name" :value="__('Tên')" />
+                                    <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full" :value="old('first_name', $employee->first_name)" required oninput="updateDisplayName()" />
+                                    <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
+                                </div>
                             </div>
 
                             <!-- Số điện thoại (Được sửa) -->
@@ -70,14 +78,14 @@
                                     {{ __('Thông tin tài khoản') }}
                                 </h3>
                                 <p class="mt-1 text-sm text-gray-600">
-                                    {{ __("Cập nhật tên hiển thị và email đăng nhập.") }}
+                                    {{ __("Cập nhật email đăng nhập (Tên hiển thị tự động lấy từ Họ và tên).") }}
                                 </p>
                             </header>
 
-                            <!-- Tên hiển thị -->
+                            <!-- Tên hiển thị (Tự động) -->
                             <div>
-                                <x-input-label for="name" :value="__('Tên hiển thị')" />
-                                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+                                <x-input-label for="name" :value="__('Tên hiển thị (Tự động)')" />
+                                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full bg-gray-100" :value="old('name', $user->name)" readonly />
                                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
                             </div>
 
@@ -86,10 +94,6 @@
                                 <x-input-label for="email" :value="__('Email đăng nhập')" />
                                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
                                 <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-                                @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                                    {{-- Logic hiển thị thông báo nếu email chưa verify --}}
-                                @endif
                             </div>
 
                             {{-- =============================================== --}}
@@ -109,21 +113,21 @@
                              <div class="mt-4">
                                  <x-input-label for="current_password" :value="__('Mật khẩu hiện tại')" />
                                  <x-text-input id="current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
-                                 <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
+                                 <x-input-error :messages="$errors->get('current_password')" class="mt-2" />
                              </div>
 
                              <!-- Mật khẩu mới -->
                              <div class="mt-4">
                                  <x-input-label for="password" :value="__('Mật khẩu mới')" />
                                  <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-                                 <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
+                                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
                              </div>
 
                              <!-- Xác nhận mật khẩu mới -->
                              <div class="mt-4">
                                  <x-input-label for="password_confirmation" :value="__('Xác nhận mật khẩu mới')" />
                                  <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password"/>
-                                 <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
+                                 <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                              </div>
 
 
@@ -146,4 +150,12 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function updateDisplayName() {
+            const firstName = document.getElementById('first_name').value;
+            const lastName = document.getElementById('last_name').value;
+            document.getElementById('name').value = lastName + (firstName ? ' ' + firstName : '');
+        }
+    </script>
 </x-employee-layout>

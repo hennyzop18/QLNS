@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\WorkSchedule;
 use Illuminate\Http\Request;
-// Import Form Requests nếu tạo (ví dụ bên dưới)
 use App\Http\Requests\StoreWorkScheduleRequest;
 use App\Http\Requests\UpdateWorkScheduleRequest;
-
 
 class WorkScheduleController extends Controller
 {
@@ -23,7 +21,6 @@ class WorkScheduleController extends Controller
         return view('admin.work_schedules.create');
     }
 
-    // Sử dụng Form Request
     public function store(StoreWorkScheduleRequest $request)
     {
         WorkSchedule::create($request->validated());
@@ -32,7 +29,6 @@ class WorkScheduleController extends Controller
 
     public function show(WorkSchedule $workSchedule)
     {
-        // Thường không cần trang show riêng, có thể redirect
         return redirect()->route('admin.work-schedules.edit', $workSchedule);
     }
 
@@ -41,7 +37,6 @@ class WorkScheduleController extends Controller
         return view('admin.work_schedules.edit', compact('workSchedule'));
     }
 
-    // Sử dụng Form Request
     public function update(UpdateWorkScheduleRequest $request, WorkSchedule $workSchedule)
     {
         $workSchedule->update($request->validated());
@@ -50,13 +45,30 @@ class WorkScheduleController extends Controller
 
     public function destroy(WorkSchedule $workSchedule)
     {
-        // Cần kiểm tra xem ca làm việc này có đang được gán cho nhân viên nào không
-        // (Nếu có bảng pivot employee_work_schedule)
-        // if ($workSchedule->employees()->exists()) {
-        //     return redirect()->route('admin.work-schedules.index')->with('error', 'Không thể xóa ca làm việc đang được sử dụng.');
-        // }
+        $isUsedInEmployees = \App\Models\Employee::where('work_schedule_id', $workSchedule->id)->exists();
+        $isUsedInSchedules = \App\Models\EmployeeSchedule::where('work_schedule_id', $workSchedule->id)->exists();
+        $isUsedInMonthly   = \App\Models\MonthlyRegistration::where('work_schedule_id', $workSchedule->id)->exists();
+        $isUsedInAttendances = \App\Models\Attendance::where('work_schedule_id', $workSchedule->id)->exists();
+
+        if ($isUsedInEmployees || $isUsedInSchedules || $isUsedInMonthly || $isUsedInAttendances) {
+            return redirect()->route('admin.work-schedules.index')
+                ->with('error', 'Cảnh báo: Ca làm việc này đang có nhân viên sử dụng, đã lên lịch hoặc đã có dữ liệu chấm công. Không thể xóa!');
+        }
 
         $workSchedule->delete();
-        return redirect()->route('admin.work-schedules.index')->with('success', 'Xóa ca làm việc thành công!');
+        return redirect()->route('admin.work-schedules.index')->with('success', 'Đã chuyển ca làm việc vào thùng rác.');
+    }
+
+    public function trash()
+    {
+        $schedules = WorkSchedule::onlyTrashed()->latest()->paginate(15);
+        return view('admin.work_schedules.trash', compact('schedules'));
+    }
+
+    public function restore($id)
+    {
+        $schedule = WorkSchedule::withTrashed()->findOrFail($id);
+        $schedule->restore();
+        return redirect()->route('admin.work-schedules.trash')->with('success', 'Khôi phục ca làm việc thành công!');
     }
 }
