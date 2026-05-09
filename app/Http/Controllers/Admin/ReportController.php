@@ -162,7 +162,9 @@ class ReportController extends Controller
         $totalNetSalary = $summaryQuery->sum('net_salary');
         $totalNetSalary = $summaryQuery->sum('net_salary');
         $totalBaseSalary = $summaryQuery->sum('base_salary');
-        $totalAllowances = $summaryQuery->sum('allowances');
+        $totalTaxableAllowances = $summaryQuery->sum('taxable_allowances');
+        $totalNontaxableAllowances = $summaryQuery->sum('nontaxable_allowances');
+        $totalAllowances = $totalTaxableAllowances + $totalNontaxableAllowances;
         $totalDeductions = $summaryQuery->sum('deductions');
         $totalBonus = $summaryQuery->sum('bonus');
         $totalFines = $summaryQuery->sum('fines');

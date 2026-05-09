@@ -38,7 +38,9 @@ class UpdateSalaryRequest extends FormRequest
         // Validate các trường chi tiết lương
         return [
             'base_salary' => 'required|numeric|min:0',
-            'allowances' => 'required|numeric|min:0',
+            'taxable_allowances' => 'required|numeric|min:0',
+            'nontaxable_allowances' => 'required|numeric|min:0',
+            'ot_hours' => 'nullable|numeric|min:0',
             'deductions' => 'required|numeric|min:0',
             'bonus' => 'required|numeric|min:0',
             'fines' => 'required|numeric|min:0',

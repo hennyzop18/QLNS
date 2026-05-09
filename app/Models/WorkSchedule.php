@@ -28,6 +28,7 @@ class WorkSchedule extends Model
         'start_time',
         'end_time',
         'late_threshold',
+        'break_hours',  // DESIGN#10: số giờ nghỉ giữa ca
     ];
 
     /**
@@ -116,22 +117,20 @@ class WorkSchedule extends Model
      * }
      */
 
-    /*
-    |--------------------------------------------------------------------------
-    | Methods (Phương thức tùy chỉnh) - Tùy chọn
-    |--------------------------------------------------------------------------
-    */
-
     /**
-     * KIỂM TRA VẮNG MẶT (ABSENT)
-     * Trả về true nếu thời gian check-in trễ hơn mốc cho phép đi trễ.
+     * KIỂM TRA VẮNG MẶT / ĐẾN QUÁ MUỘN (SHOULD MARK ABSENT)
      *
-     * @param Carbon $checkInTime
-     * @return boolean
+     * Đây KHÔNG phải là "người không đến làm" — đó là trường hợp người check-in
+     * nhưng đã quá muộn đến mức hệ thống coi như vắng (sau late_threshold).
+     *
+     * Người thực sự vắng mặt = không có bản ghi check-in trong ngày (xử lý ở job batch).
+     *
+     * @param Carbon $checkInTime Thời điểm check-in thực tế
+     * @return bool True nếu nên đánh dấu 'absent' do đến cực kỳ trễ
      */
-    public function isAbsent(Carbon $checkInTime): bool
+    public function shouldMarkAbsent(Carbon $checkInTime): bool
     {
-        // Nếu không có mốc đi trễ, coi như không bao giờ vắng (chỉ có trễ)
+        // Nếu không cấu hình late_threshold → không áp dụng logic này
         if (!$this->late_threshold) {
             return false;
         }
@@ -142,76 +141,106 @@ class WorkSchedule extends Model
     }
 
     /**
+     * @deprecated Dùng shouldMarkAbsent() thay thế
+     */
+    public function isAbsent(Carbon $checkInTime): bool
+    {
+        return $this->shouldMarkAbsent($checkInTime);
+    }
+
+    /**
      * KIỂM TRA ĐI TRỄ (LATE)
-     * Trả về true nếu check-in trong khoảng (start_time, late_threshold].
      *
-     * @param Carbon $checkInTime
-     * @return boolean
+     * Logic:
+     * - Nếu có late_threshold: trễ khi check-in trong khoảng (start_time, late_threshold]
+     * - Nếu KHÔNG có late_threshold: mọi check-in sau start_time đều là trễ (BUG#1 fix)
+     *
+     * @param Carbon $checkInTime Thời điểm check-in thực tế
+     * @return bool True nếu đi trễ
      */
     public function isLate(Carbon $checkInTime): bool
     {
         $startTime = Carbon::parse($checkInTime->toDateString() . ' ' . $this->start_time);
-        $thresholdTime = $this->late_threshold 
-            ? Carbon::parse($checkInTime->toDateString() . ' ' . $this->late_threshold)
-            : $startTime; // Nếu không có threshold, không bao giờ trễ
 
-        // Đi trễ là khi check-in sau giờ bắt đầu VÀ không muộn hơn mốc đi trễ
-        return $checkInTime->gt($startTime) && $checkInTime->lte($thresholdTime);
+        // Chưa đến giờ bắt đầu hoặc đúng giờ → không trễ
+        if (!$checkInTime->gt($startTime)) {
+            return false;
+        }
+
+        // Có late_threshold → chỉ "late" nếu chưa vượt qua ngưỡng đó
+        // (nếu đã vượt ngưỡng → shouldMarkAbsent() sẽ xử lý)
+        if ($this->late_threshold) {
+            $thresholdTime = Carbon::parse($checkInTime->toDateString() . ' ' . $this->late_threshold);
+            return $checkInTime->lte($thresholdTime);
+        }
+
+        // Không có late_threshold → chỉ cần sau start_time là đã trễ (BUG#1 fix)
+        return true;
     }
 
     /**
      * KIỂM TRA ĐÚNG GIỜ (PRESENT)
-     * Trả về true nếu check-in trong khoảng [start_time - 5 phút, start_time].
+     * Check-in sớm hơn hoặc đúng giờ start_time (cho phép đến trước 15 phút).
      *
      * @param Carbon $checkInTime
-     * @return boolean
+     * @return bool
      */
     public function isPresent(Carbon $checkInTime): bool
     {
         $startTime = Carbon::parse($checkInTime->toDateString() . ' ' . $this->start_time);
-        $earlyMargin = $startTime->copy()->subMinutes(5); // Cho phép đến sớm 5 phút
+        $earlyMargin = $startTime->copy()->subMinutes(15); // Cho phép đến sớm tối đa 15 phút
 
-        // Đúng giờ là khi check-in nằm trong khoảng cho phép
         return $checkInTime->between($earlyMargin, $startTime);
     }
-    
-    public function isLeftEarly(Carbon $checkOutTime): bool // **** THÊM PHƯƠNG THỨC NÀY ****
+
+    public function isLeftEarly(Carbon $checkOutTime): bool
     {
-        // So sánh giờ check-out với giờ kết thúc của lịch
-        return $checkOutTime->format('H:i:s') < Carbon::parse($this->end_time)->format('H:i:s');
+        $endTimeToday = Carbon::parse($checkOutTime->toDateString() . ' ' . $this->end_time);
+        
+        // Tạo các mốc end_time để tìm mốc gần với check_out_time nhất
+        $endTimeYesterday = $endTimeToday->copy()->subDay();
+        $endTimeTomorrow = $endTimeToday->copy()->addDay();
+
+        $diffToday = abs($checkOutTime->diffInSeconds($endTimeToday));
+        $diffYesterday = abs($checkOutTime->diffInSeconds($endTimeYesterday));
+        $diffTomorrow = abs($checkOutTime->diffInSeconds($endTimeTomorrow));
+
+        // Tìm mốc end_time gần nhất
+        $closestEndTime = $endTimeToday;
+        if ($diffYesterday < $diffToday && $diffYesterday < $diffTomorrow) {
+            $closestEndTime = $endTimeYesterday;
+        } elseif ($diffTomorrow < $diffToday && $diffTomorrow < $diffYesterday) {
+            $closestEndTime = $endTimeTomorrow;
+        }
+
+        // Về sớm nếu checkout trước mốc end_time gần nhất
+        return $checkOutTime->lt($closestEndTime);
     }
 
-    
     /**
-     * Accessor để tính toán và lấy ra số giờ làm việc của một ca.
-     * Tự động có thể gọi qua $schedule->duration_in_hours
+     * Accessor: Tính số giờ làm việc thuần của ca (trừ giờ nghỉ).
+     * Gọi qua: $schedule->duration_in_hours
      */
-   
     public function getDurationInHoursAttribute(): float
-{
-    $startTime = Carbon::parse($this->start_time);
-    $endTime = Carbon::parse($this->end_time);
-    
-    // Xử lý ca qua đêm (nếu có)
-    if ($endTime->lt($startTime)) {
-        $endTime->addDay();
-    }
-    
-    // === SỬA ĐỔI QUAN TRỌNG TẠI ĐÂY ===
-    // Sử dụng diffInMinutes với tham số thứ hai là `true` để đảm bảo kết quả luôn là số dương (giá trị tuyệt đối).
-    $totalMinutes = $startTime->diffInMinutes($endTime, true);
-    // ===================================
-    
-    $totalHours = $totalMinutes / 60;
+    {
+        $startTime = Carbon::parse($this->start_time);
+        $endTime = Carbon::parse($this->end_time);
 
-    // Quy tắc nghiệp vụ: Trừ 1 giờ nghỉ trưa cho ca có tên chứa "Hành chính"
-    if (str_contains(strtolower($this->name), 'hành chính')) {
-        $breakHours = 1;
-        // Chỉ trừ nếu ca làm việc dài hơn giờ nghỉ
+        // Xử lý ca qua đêm
+        if ($endTime->lt($startTime)) {
+            $endTime->addDay();
+        }
+
+        $totalMinutes = $startTime->diffInMinutes($endTime, true);
+        $totalHours = $totalMinutes / 60;
+
+        // DESIGN#10 fix: Dùng cột break_hours thay vì brittle string matching
+        // Nếu có break_hours trong DB → dùng đó; Fallback: tên ca chứa "hành chính" → 1 giờ
+        $breakHours = $this->break_hours ?? 0;
+        if ($breakHours === 0 && str_contains(strtolower($this->name ?? ''), 'hành chính')) {
+            $breakHours = 1; // Legacy fallback, nên set break_hours trong DB
+        }
+
         return ($totalHours > $breakHours) ? $totalHours - $breakHours : $totalHours;
     }
-    
-    // Các ca khác không trừ giờ nghỉ
-    return $totalHours;
-}
 }

@@ -71,9 +71,17 @@ class EmployeeController extends Controller
             'address' => $validatedData['address'],
             'hire_date' => $validatedData['hire_date'],
             'position_id' => $validatedData['position_id'],
-            'department_id' => $validatedData['department_id'],
+            'department_id' => $validatedData['department_id'] ?? null,
             'status' => 'active', // Mặc định là active
-            // personal_email có thể thêm vào form nếu cần
+            
+            // Cấu hình lương
+            'salary_type'           => $validatedData['salary_type'],
+            'base_salary'           => $validatedData['base_salary'] ?? 0,
+            'hourly_rate'           => $validatedData['hourly_rate'] ?? null,
+            'taxable_allowances'    => $validatedData['taxable_allowances'] ?? 0,
+            'nontaxable_allowances' => $validatedData['nontaxable_allowances'] ?? 0,
+            'insurance_salary'      => $validatedData['insurance_salary'] ?? null,
+            'dependents'            => $validatedData['dependents'] ?? 0,
         ]);
 
         // --- (Tùy chọn) Tạo User Account ---

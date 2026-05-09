@@ -114,13 +114,13 @@ class AttendanceController extends Controller
                 $newTime = Carbon::parse($originalDateStr . ' ' . $validated['check_out_time_time']);
                 if (!$finalCheckOutTime || $finalCheckOutTime->ne($newTime)) {
                     $updateData['check_out_time'] = $newTime;
-                    // $finalCheckOutTime = $newTime; // Không cần gán lại vì checkout ko ảnh hưởng status theo logic mới
+                    $finalCheckOutTime = $newTime; // FLAW#5 fix: cần cập nhật để tính status đúng
                     $changed = true;
                 }
             } else {
                 if ($finalCheckOutTime !== null) {
                     $updateData['check_out_time'] = null;
-                    // $finalCheckOutTime = null;
+                    $finalCheckOutTime = null; // FLAW#5 fix: khi xóa checkout phải cập nhật biến
                     $changed = true;
                 }
             }
@@ -180,6 +180,27 @@ class AttendanceController extends Controller
         }
         // **** KẾT THÚC TÍNH TOÁN STATUS ****
 
+
+        // ─── C2: Tính lại actual_hours khi admin sửa giờ ─────────────
+        if ($changed && $finalCheckInTime && $finalCheckOutTime) {
+            $workScheduleForHours = $employee->activeWorkScheduleOn($attendanceDate);
+            $breakHours = 0.0;
+            if ($workScheduleForHours) {
+                $breakHours = (float) ($workScheduleForHours->break_hours ?? 0);
+                if ($breakHours === 0.0 && str_contains(strtolower($workScheduleForHours->name ?? ''), 'hành chính')) {
+                    $breakHours = 1.0;
+                }
+            }
+            $rawHours    = $finalCheckInTime->diffInMinutes($finalCheckOutTime) / 60;
+            $actualHours = max(0, round($rawHours - $breakHours, 2));
+            $actualHours = min($actualHours, 8.0); // Cap 8h/ngày
+            $updateData['actual_hours'] = $actualHours;
+            Log::info("Recalculated actual_hours for Attendance ID {$attendance->id}: {$actualHours}h");
+        } elseif ($changed && (!$finalCheckInTime || !$finalCheckOutTime)) {
+            // Nếu xóa một trong hai giờ → actual_hours = null
+            $updateData['actual_hours'] = null;
+        }
+        // ─────────────────────────────────────────────────────────────
 
         // Chỉ gọi update nếu thực sự có dữ liệu thay đổi
         if ($changed) {

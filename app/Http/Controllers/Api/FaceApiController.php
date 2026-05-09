@@ -52,7 +52,7 @@ class FaceApiController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Lỗi lưu avatar: ' . $e->getMessage());
-            return response()->json(['message' . 'Đã xảy ra lỗi khi lưu ảnh đại diện.'], 500);
+            return response()->json(['message' => 'Đã xảy ra lỗi khi lưu ảnh đại diện.'], 500);
         }
 
         // 2. Lưu face descriptor
@@ -121,9 +121,25 @@ class FaceApiController extends Controller
     // --- Xử lý Chấm Công (LOGIC MỚI THEO YÊU CẦU) ---
     if ($todaysAttendance) {
         // ĐÃ CÓ CHECK-IN -> Đây là các lần chấm tiếp theo trong ngày -> Luôn cập nhật CHECK-OUT
-        $todaysAttendance->check_out_time = $now;
-
+        // ─── Tính số giờ làm thực tế (C1) ────────────────────────────
+        $checkInTime  = $todaysAttendance->check_in_time;
+        $breakHours   = 0;
         $workSchedule = $employee->activeWorkScheduleOn($today);
+        if ($workSchedule) {
+            $breakHours = (float) ($workSchedule->break_hours ?? 0);
+            // Legacy fallback: ca hành chính chưa set break_hours → 1h
+            if ($breakHours === 0.0 && str_contains(strtolower($workSchedule->name ?? ''), 'hành chính')) {
+                $breakHours = 1.0;
+            }
+        }
+        $rawHours    = $checkInTime->diffInMinutes($now) / 60; // giờ thực tế check-in→check-out
+        $actualHours = max(0, round($rawHours - $breakHours, 2));
+        $actualHours = min($actualHours, 8.0); // Cap 8h/ngày (OT chưa tính)
+
+        $todaysAttendance->check_out_time = $now;
+        $todaysAttendance->actual_hours   = $actualHours;
+        // ─────────────────────────────────────────────────────────────
+
         if ($workSchedule) {
             $endTime = Carbon::parse($today->toDateString() . ' ' . $workSchedule->end_time);
             
@@ -140,6 +156,7 @@ class FaceApiController extends Controller
         }
 
         $todaysAttendance->save();
+        Cache::forget($tokenKey); // Xóa token SAU KHI lưu DB thành công
         $action = 'Check-out (Cập nhật)';
     } 
     else {
@@ -176,6 +193,7 @@ class FaceApiController extends Controller
             'status' => $status,
             'check_out_time' => null
         ]);
+        Cache::forget($tokenKey); // Xóa token SAU KHI lưu DB thành công
         $action = 'Check-in';
     }
     

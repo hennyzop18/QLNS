@@ -41,6 +41,15 @@ class UpdateEmployeeRequest extends FormRequest
             'position_id' => 'required|exists:positions,id',
             'department_id' => 'nullable|exists:departments,id', // Thêm department nếu có
             'status' => ['required', Rule::in(['active', 'inactive', 'terminated'])],
+            
+            // Cấu hình lương
+            'salary_type'           => ['required', Rule::in(['fixed', 'hourly'])],
+            'base_salary'           => 'nullable|numeric|min:0',
+            'hourly_rate'           => 'nullable|numeric|min:0',
+            'taxable_allowances'    => 'nullable|numeric|min:0',
+            'nontaxable_allowances' => 'nullable|numeric|min:0',
+            'insurance_salary'      => 'nullable|numeric|min:0',
+            'dependents'            => 'nullable|integer|min:0',
         ];
     }
 }

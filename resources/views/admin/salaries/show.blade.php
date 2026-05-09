@@ -60,44 +60,111 @@
 
                     {{-- Chi Tiết Lương --}}
                     <div class="border-b pb-6">
-                        <h4 class="text-lg font-semibold text-gray-700 mb-4">Chi tiết tính lương</h4>
-                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                            <div class="sm:col-span-1">
-                                <dt class="font-medium text-gray-500">Lương cơ bản</dt>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-700">Chi tiết tính lương</h4>
+                            {{-- Badge chế độ lương --}}
+                            @php
+                                $typeLabels = ['fixed' => '💼 Lương cố định', 'hourly' => '⏱ Lương theo giờ', 'override' => '✏️ Ghi đè đồng loạt'];
+                                $typeColors = ['fixed' => 'bg-blue-100 text-blue-800', 'hourly' => 'bg-purple-100 text-purple-800', 'override' => 'bg-amber-100 text-amber-800'];
+                                $sType = $salary->salary_type ?? 'fixed';
+                            @endphp
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $typeColors[$sType] ?? 'bg-gray-100 text-gray-700' }}">
+                                {{ $typeLabels[$sType] ?? $sType }}
+                            </span>
+                        </div>
+
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+
+                            {{-- ─── PHẦN GROSS ─── --}}
+                            @if($sType === 'hourly')
+                            <div class="sm:col-span-2 bg-purple-50 rounded p-3">
+                                <dt class="font-medium text-purple-700">Tổng giờ làm / OT</dt>
+                                <dd class="mt-1 text-purple-900 font-semibold">
+                                    {{ number_format($salary->total_actual_hours ?? 0, 2) }} giờ (thường) + {{ number_format($salary->ot_hours ?? 0, 2) }} giờ (OT)
+                                    × {{ number_format($salary->hourly_rate_snapshot ?? 0, 0, ',', '.') }} đ/giờ
+                                    = {{ number_format((($salary->total_actual_hours ?? 0) + ($salary->ot_hours ?? 0) * 1.5) * ($salary->hourly_rate_snapshot ?? 0), 0, ',', '.') }} đ
+                                </dd>
+                            </div>
+                            @elseif($sType === 'override')
+                            <div class="sm:col-span-2 bg-amber-50 rounded p-3">
+                                <dt class="font-medium text-amber-700">Lương ghi đè (admin nhập)</dt>
+                                <dd class="mt-1 text-amber-900 font-semibold">
+                                    {{ number_format($salary->default_salary_override ?? 0, 0, ',', '.') }} đ
+                                </dd>
+                            </div>
+                            @else
+                            <div>
+                                <dt class="font-medium text-gray-500">Lương cơ bản (gross)</dt>
+                                <dd class="mt-1 text-gray-900 text-right">{{ number_format($salary->base_salary, 0, ',', '.') }} đ</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-500">Ngày công thực tế / chuẩn</dt>
                                 <dd class="mt-1 text-gray-900 text-right">
-                                    {{ number_format($salary->base_salary, 0, ',', '.') }} đ
+                                    {{ $salary->actual_work_days ?? 0 }} / {{ $salary->standard_work_days ?? 22 }} ngày
                                 </dd>
                             </div>
-                            <div class="sm:col-span-1">
-                                <dt class="font-medium text-gray-500">Phụ cấp (+)</dt>
-                                <dd class="mt-1 text-gray-900 text-right">
-                                    {{ number_format($salary->allowances, 0, ',', '.') }} đ
-                                </dd>
+                            <div>
+                                <dt class="font-medium text-gray-500">Lương tính theo công (prorated + OT)</dt>
+                                <dd class="mt-1 text-gray-900 text-right font-medium">{{ number_format($salary->prorated_salary ?? 0, 0, ',', '.') }} đ</dd>
                             </div>
-                            <div class="sm:col-span-1">
-                                <dt class="font-medium text-gray-500">Khấu trừ (-)</dt>
-                                <dd class="mt-1 text-gray-900 text-right text-red-600">
-                                    {{ number_format($salary->deductions, 0, ',', '.') }} đ
-                                </dd>
+                            <div>
+                                <dt class="font-medium text-gray-500">Ngày vắng / đi trễ</dt>
+                                <dd class="mt-1 text-red-600 text-right">{{ $salary->absent_days ?? 0 }} ngày vắng, {{ $salary->late_days ?? 0 }} ngày trễ</dd>
                             </div>
-                            <div class="sm:col-span-1">
-                                <dt class="font-medium text-gray-500">Thưởng (Khen thưởng) (+)</dt>
-                                <dd class="mt-1 text-gray-900 text-right">
-                                    {{ number_format($salary->bonus, 0, ',', '.') }} đ
-                                </dd>
+                            @endif
+
+                            {{-- ─── GROSS SAU PHỤ CẤP & THƯỞNG ─── --}}
+                            <div class="sm:col-span-1 border-t pt-2">
+                                <dt class="font-medium text-gray-500">Phụ cấp chịu thuế (+)</dt>
+                                <dd class="mt-1 text-green-700 text-right">+ {{ number_format($salary->taxable_allowances ?? 0, 0, ',', '.') }} đ</dd>
                             </div>
-                            <div class="sm:col-span-1">
-                                <dt class="font-medium text-gray-500">Phạt (Kỷ luật) (-)</dt>
-                                <dd class="mt-1 text-gray-900 text-right text-red-600">
-                                    {{ number_format($salary->fines, 0, ',', '.') }} đ
-                                </dd>
+                            <div class="sm:col-span-1 border-t pt-2">
+                                <dt class="font-medium text-gray-500">Phụ cấp KHÔNG chịu thuế (+)</dt>
+                                <dd class="mt-1 text-green-700 text-right">+ {{ number_format($salary->nontaxable_allowances ?? 0, 0, ',', '.') }} đ</dd>
                             </div>
-                            <div class="sm:col-span-1 border-t pt-2 mt-2">
-                                <dt class="font-semibold text-gray-700 text-base">Lương Thực Nhận (=)</dt>
-                                <dd class="mt-1 text-indigo-700 text-right font-bold text-lg">
+                            <div class="sm:col-span-1 border-t pt-2">
+                                <dt class="font-medium text-gray-500">Thưởng Khen thưởng (+)</dt>
+                                <dd class="mt-1 text-green-700 text-right">+ {{ number_format($salary->bonus, 0, ',', '.') }} đ</dd>
+                            </div>
+
+                            {{-- ─── BHXH CHI TIẾT ─── --}}
+                            <div class="sm:col-span-2 mt-2">
+                                <dt class="font-medium text-gray-600 mb-1">Khấu trừ Bảo hiểm bắt buộc (10.5%)</dt>
+                                <div class="grid grid-cols-3 gap-2 text-xs text-gray-500 bg-gray-50 rounded p-2">
+                                    <div>BHXH (8%) <span class="block font-semibold text-red-600">- {{ number_format($salary->si_deduction ?? 0, 0, ',', '.') }} đ</span></div>
+                                    <div>BHYT (1.5%) <span class="block font-semibold text-red-600">- {{ number_format($salary->hi_deduction ?? 0, 0, ',', '.') }} đ</span></div>
+                                    <div>BHTN (1%) <span class="block font-semibold text-red-600">- {{ number_format($salary->ui_deduction ?? 0, 0, ',', '.') }} đ</span></div>
+                                </div>
+                            </div>
+
+                            {{-- ─── THUẾ TNCN ─── --}}
+                            <div>
+                                <dt class="font-medium text-gray-500">Thu nhập chịu thuế</dt>
+                                <dd class="mt-1 text-gray-700 text-right">{{ number_format($salary->taxable_income ?? 0, 0, ',', '.') }} đ</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-500">Thuế TNCN (7 bậc lũy tiến)</dt>
+                                <dd class="mt-1 text-red-600 text-right">- {{ number_format($salary->pit_tax ?? 0, 0, ',', '.') }} đ</dd>
+                            </div>
+
+                            {{-- ─── PHẠT & KỶ LUẬT ─── --}}
+                            <div>
+                                <dt class="font-medium text-gray-500">Phạt kỷ luật (-)</dt>
+                                <dd class="mt-1 text-red-600 text-right">- {{ number_format($salary->fines, 0, ',', '.') }} đ</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-500">Phạt đi trễ (-)</dt>
+                                <dd class="mt-1 text-red-600 text-right">- {{ number_format($salary->late_fine ?? 0, 0, ',', '.') }} đ</dd>
+                            </div>
+
+                            {{-- ─── NET ─── --}}
+                            <div class="sm:col-span-2 border-t-2 border-indigo-200 pt-3 mt-2 bg-indigo-50 rounded p-3">
+                                <dt class="font-bold text-indigo-700 text-base">💵 Lương Thực Nhận (NET)</dt>
+                                <dd class="mt-1 text-indigo-800 text-right font-extrabold text-2xl">
                                     {{ number_format($salary->net_salary, 0, ',', '.') }} đ
                                 </dd>
                             </div>
+
                         </dl>
                     </div>
 

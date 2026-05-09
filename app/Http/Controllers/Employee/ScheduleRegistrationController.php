@@ -80,6 +80,16 @@ class ScheduleRegistrationController extends Controller
 
             $schedule = $workSchedules->get($scheduleId);
             if (!$schedule) continue;
+
+            // FLAW#6 fix: Kiểm tra nếu ngày này đã có lịch APPROVED → không cho ghi đè
+            $existing = MonthlyRegistration::where('employee_id', $employee->id)
+                ->where('date', $date->toDateString())
+                ->first();
+            
+            if ($existing && $existing->status === 'approved') {
+                // Bỏ qua ngày đã được duyệt, không ghi đè
+                continue;
+            }
             
             $hours = $schedule->duration_in_hours;
             $totalHours += $hours;

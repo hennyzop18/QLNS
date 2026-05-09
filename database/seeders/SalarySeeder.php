@@ -25,11 +25,12 @@ class SalarySeeder extends Seeder
 
                 // --- Logic Tính toán lương mẫu (tương tự trong SalaryController@store) ---
                 $baseSalary = $employee->base_salary ?? rand(7000000, 25000000);
-                $allowances = rand(0, 1) ? rand(500000, 3000000) : 0;
+                $taxableAllowances = rand(0, 1) ? rand(500000, 2000000) : 0;
+                $nontaxableAllowances = rand(0, 1) ? rand(200000, 1000000) : 0;
                 $deductions = rand(0, 1) ? rand(100000, 1500000) : 0;
                 $bonus = rand(0, 1) < 0.3 ? rand(200000, 5000000) : 0;
                 $fines = rand(0, 1) < 0.1 ? rand(50000, 500000) : 0;
-                $netSalary = max(0, $baseSalary + $allowances - $deductions + $bonus - $fines);
+                $netSalary = max(0, $baseSalary + $taxableAllowances + $nontaxableAllowances - $deductions + $bonus - $fines);
                 $isPaid = rand(0, 1) < 0.8;
 
                 // Sử dụng updateOrCreate để tránh lỗi trùng lặp khóa unique
@@ -41,7 +42,10 @@ class SalarySeeder extends Seeder
                     ],
                     [
                         'base_salary' => $baseSalary,
-                        'allowances' => $allowances,
+                        'standard_work_days' => 22,
+                        'actual_work_days' => 22,
+                        'taxable_allowances' => $taxableAllowances,
+                        'nontaxable_allowances' => $nontaxableAllowances,
                         'deductions' => $deductions,
                         'bonus' => $bonus,
                         'fines' => $fines,

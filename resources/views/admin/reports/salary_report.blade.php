@@ -161,7 +161,7 @@
                                                                     <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-gray-500">
                                                                         {{ number_format($salary->base_salary, 0, ',', '.') }}</td>
                                                                     <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-gray-500">
-                                                                        {{ number_format($salary->allowances, 0, ',', '.') }}</td>
+                                                                        {{ number_format(($salary->taxable_allowances ?? 0) + ($salary->nontaxable_allowances ?? 0), 0, ',', '.') }}</td>
                                                                     <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-red-500">
                                                                         {{ number_format($salary->deductions, 0, ',', '.') }}</td>
                                                                     <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-green-500">
