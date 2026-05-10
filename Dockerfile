@@ -52,7 +52,7 @@ COPY ./docker/nginx.conf /etc/nginx/sites-available/default
 EXPOSE 7860
 
 # Cấp quyền
-RUN chown -R www-data:www-data /var/www/storage /var/www/cache
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 # Chạy lệnh khởi động (Auto migrate và start services)
 CMD php artisan migrate --force && service nginx start && php-fpm
