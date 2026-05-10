@@ -59,8 +59,9 @@ RUN npm install && npm run build
 COPY ./docker/nginx.conf /etc/nginx/sites-available/default
 EXPOSE 7860
 
-# Cấp quyền
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Cấp quyền và tạo thư mục storage cần thiết
+RUN mkdir -p /var/www/storage/app/public/avatars && \
+    chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Chạy lệnh khởi động (Auto migrate và start services)
-CMD php artisan migrate --force && nginx && php-fpm
+# Chạy lệnh khởi động (Auto migrate, storage link và start services)
+CMD php artisan migrate --force && php artisan storage:link && nginx && php-fpm

@@ -44,6 +44,11 @@ class FaceApiController extends Controller
                 Storage::disk('public')->delete($employee->avatar);
             }
 
+            // Đảm bảo thư mục avatars tồn tại
+            if (!Storage::disk('public')->exists('avatars')) {
+                Storage::disk('public')->makeDirectory('avatars');
+            }
+
             // Lưu file mới vào storage/app/public/avatars
             Storage::disk('public')->put($filename, $imageData);
 
