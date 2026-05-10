@@ -164,13 +164,17 @@ Route::middleware(['auth', 'employee']) // Yêu cầu đăng nhập và là empl
 Route::get('/kiosk/attendance', [KioskController::class, 'show'])
     ->name('kiosk.attendance.show');
             
-Route::get('/test-time', function() {
-    return response()->json([
-        'carbon_now' => now()->toDateTimeString(),
-        'php_date' => date('Y-m-d H:i:s'),
-        'config_timezone' => config('app.timezone')
-    ]);
-});
+// Route debug — CHỈ chạy trên môi trường local, KHÔNG dùng trên production
+if (app()->isLocal()) {
+    Route::get('/test-time', function() {
+        return response()->json([
+            'carbon_now' => now()->toDateTimeString(),
+            'php_date' => date('Y-m-d H:i:s'),
+            'config_timezone' => config('app.timezone')
+        ]);
+    });
+}
+
 // --- Route Logout ---
 Route::get('/logout', function () {
     Auth::logout();

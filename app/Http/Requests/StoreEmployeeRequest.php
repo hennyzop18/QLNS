@@ -31,7 +31,17 @@ class StoreEmployeeRequest extends FormRequest
                 'required',
                 Rule::exists('positions', 'id')->whereNull('deleted_at') // Chỉ cho phép tồn tại nếu chưa bị soft delete
             ],
-            'create_account' => 'nullable|boolean'
+            'department_id' => 'nullable|exists:departments,id',
+            'create_account' => 'nullable|boolean',
+
+            // Cấu hình lương
+            'salary_type'           => ['required', Rule::in(['fixed', 'hourly'])],
+            'base_salary'           => 'nullable|numeric|min:0',
+            'hourly_rate'           => 'nullable|numeric|min:0',
+            'taxable_allowances'    => 'nullable|numeric|min:0',
+            'nontaxable_allowances' => 'nullable|numeric|min:0',
+            'insurance_salary'      => 'nullable|numeric|min:0',
+            'dependents'            => 'nullable|integer|min:0',
         ];
     }
 

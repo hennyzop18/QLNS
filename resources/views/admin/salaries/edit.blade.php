@@ -48,11 +48,25 @@
                                     <x-input-error :messages="$errors->get('base_salary')" class="mt-2" />
                                 </div>
                                 <div>
-                                    <x-input-label for="allowances" value="{{ __('Phụ Cấp (+)') }}" />
-                                    <x-text-input id="allowances" class="block mt-1 w-full" type="number" step="1000"
-                                        name="allowances" :value="old('allowances', $salary->allowances)" required />
-                                    <x-input-error :messages="$errors->get('allowances')" class="mt-2" />
+                                    <x-input-label for="taxable_allowances" value="{{ __('Phụ Cấp Chịu Thuế (+)') }}" />
+                                    <x-text-input id="taxable_allowances" class="block mt-1 w-full" type="number" step="1000"
+                                        name="taxable_allowances" :value="old('taxable_allowances', $salary->taxable_allowances)" required />
+                                    <x-input-error :messages="$errors->get('taxable_allowances')" class="mt-2" />
                                 </div>
+                                <div>
+                                    <x-input-label for="nontaxable_allowances" value="{{ __('Phụ Cấp KHÔNG Thuế (+)') }}" />
+                                    <x-text-input id="nontaxable_allowances" class="block mt-1 w-full" type="number" step="1000"
+                                        name="nontaxable_allowances" :value="old('nontaxable_allowances', $salary->nontaxable_allowances)" required />
+                                    <x-input-error :messages="$errors->get('nontaxable_allowances')" class="mt-2" />
+                                </div>
+                                @if($salary->salary_type === 'hourly')
+                                <div>
+                                    <x-input-label for="ot_hours" value="{{ __('Số giờ làm thêm (OT) (+)') }}" />
+                                    <x-text-input id="ot_hours" class="block mt-1 w-full" type="number" step="0.5"
+                                        name="ot_hours" :value="old('ot_hours', $salary->ot_hours)" />
+                                    <x-input-error :messages="$errors->get('ot_hours')" class="mt-2" />
+                                </div>
+                                @endif
                                 <div>
                                     <x-input-label for="deductions" value="{{ __('Khấu Trừ (-)') }}" />
                                     <x-text-input id="deductions" class="block mt-1 w-full" type="number" step="1000"

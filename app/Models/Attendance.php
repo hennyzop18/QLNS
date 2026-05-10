@@ -13,15 +13,17 @@ class Attendance extends Model
         'employee_id',
         'check_in_time',
         'check_out_time',
+        'actual_hours',
         'date',
         'status',
         'notes',
     ];
 
     protected $casts = [
-        'check_in_time' => 'datetime',
+        'check_in_time'  => 'datetime',
         'check_out_time' => 'datetime',
-        'date' => 'date',
+        'date'           => 'date',
+        'actual_hours'   => 'decimal:2',
     ];
 
     // Quan hệ: Một Attendance record thuộc về một Employee

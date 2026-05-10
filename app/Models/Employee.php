@@ -28,6 +28,26 @@ class Employee extends Model
         'department_id',
         'status',
         'avatar',
+        // Thêm cột lương từ migration 2026_04_12
+        'base_salary',
+        'taxable_allowances',
+        'nontaxable_allowances',
+        'insurance_salary',
+        'dependents',
+        'salary_type',
+        'hourly_rate',
+    ];
+
+    protected $casts = [
+        'dob'              => 'date',
+        'hire_date'        => 'date',
+        'termination_date' => 'date',
+        'base_salary'           => 'decimal:2',
+        'taxable_allowances'    => 'decimal:2',
+        'nontaxable_allowances' => 'decimal:2',
+        'insurance_salary'      => 'decimal:2',
+        'hourly_rate'      => 'decimal:2',
+        'dependents'       => 'integer',
     ];
 
     // Quan hệ: Một Employee thuộc về một Position
@@ -134,6 +154,9 @@ class Employee extends Model
     }
     public function monthlyRegistrations() { // Lịch đăng ký hàng tháng
         return $this->hasMany(MonthlyRegistration::class);
+    }
+    public function salaries() { // Bảng lương
+        return $this->hasMany(Salary::class);
     }
 
 }
