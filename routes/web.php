@@ -4,6 +4,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth; // Import Auth facade
 
 
+use Illuminate\Support\Facades\Http;
+
+Route::get('/check-server', function () {
+    return Http::get('http://ip-api.com/json')->json();
+});
+
 // --- Admin Controllers ---
 use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
 use App\Http\Controllers\Admin\PositionController as AdminPositionController;
