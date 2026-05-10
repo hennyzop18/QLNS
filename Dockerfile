@@ -62,5 +62,5 @@ EXPOSE 7860
 # Cấp quyền
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Chạy lệnh khởi động (Auto migrate và start services)
-CMD php artisan migrate --force && nginx && php-fpm
+# Chạy lệnh khởi động (Auto migrate, seed và start services)
+CMD php artisan migrate --force && php artisan db:seed --force && nginx && php-fpm
