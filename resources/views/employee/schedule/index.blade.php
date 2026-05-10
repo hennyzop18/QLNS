@@ -77,7 +77,8 @@
                     </div>
 
                     {{-- Bảng lịch tháng --}}
-                    <div class="grid grid-cols-7 gap-1 text-center">
+                    <div class="overflow-x-auto pb-4">
+                        <div class="grid grid-cols-7 gap-1 text-center min-w-[700px]">
                         {{-- Tiêu đề các ngày trong tuần --}}
                         @foreach(['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as $day)
                             <div class="font-bold p-2 text-sm text-gray-600">{{ $day }}</div>
@@ -132,13 +133,14 @@
                                 @endif
                             </div>
                         @endfor
-                    </div>
+                    </div> {{-- min-w-700px --}}
+                </div> {{-- overflow-x-auto --}}
 
-                    <div class="mt-6 text-right">
-                        <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700">
-                            Lưu Đăng Ký
-                        </button>
-                    </div>
+                <div class="mt-8 text-center">
+                    <button type="submit" class="w-full sm:w-auto px-12 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition duration-150">
+                        Lưu Đăng Ký
+                    </button>
+                </div>
                 </form>
             </div>
         </div>

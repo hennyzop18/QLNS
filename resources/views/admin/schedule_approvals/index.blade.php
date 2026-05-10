@@ -85,7 +85,8 @@
                         </div>
 
                         {{-- Bảng lịch tháng --}}
-                        <div class="grid grid-cols-7 gap-1 text-center">
+                        <div class="overflow-x-auto pb-4">
+                            <div class="grid grid-cols-7 gap-1 text-center min-w-[850px]">
                             @foreach(['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as $day)
                                 <div class="font-bold p-2 text-sm text-gray-600">{{ $day }}</div>
                             @endforeach
@@ -128,17 +129,18 @@
                                     </select>
                                 </div>
                             @endfor
-                        </div>
+                        </div> {{-- min-w-850px --}}
+                    </div> {{-- overflow-x-auto --}}
 
-                        <div class="mt-6 flex justify-end items-center space-x-4">
-                            <button type="button" id="approveAllBtn" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
-                                ✔️ Duyệt Tất Cả
-                            </button>
-                            
-                            <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
-                                Lưu Thay Đổi
-                            </button>
-                        </div>
+                    <div class="mt-8 flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                        <button type="button" id="approveAllBtn" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700">
+                            ✔️ Duyệt Tất Cả
+                        </button>
+                        
+                        <button type="submit" class="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700">
+                            Lưu Thay Đổi
+                        </button>
+                    </div>
                     </form>
                 @else
                     <p class="text-center text-gray-500 mt-8">Vui lòng chọn một nhân viên và tháng để xem lịch đăng ký.</p>
