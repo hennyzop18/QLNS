@@ -27,7 +27,7 @@ class UpdateEmployeeRequest extends FormRequest
         $employee = $this->route('employee');
 
         return [
-            'employee_code' => ['required', 'string', 'max:50', Rule::unique('employees')->ignore($employee->id)],
+            'employee_code' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('employees')->ignore($employee->id)],
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             // Cho phép cập nhật email user nếu có user liên kết (Rule unique bỏ qua user hiện tại)

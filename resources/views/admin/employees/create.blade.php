@@ -18,16 +18,8 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {{-- Cột 1 --}}
                             <div>
-                                <!-- Mã Nhân Viên -->
-                                <div>
-                                    <x-input-label for="employee_code" value="{{ __('Mã Nhân Viên (Tự động)') }}" />
-                                    <x-text-input id="employee_code" class="block mt-1 w-full bg-gray-100" type="text"
-                                        name="employee_code" :value="old('employee_code')" placeholder="Hệ thống tự động tạo" readonly />
-                                    <x-input-error :messages="$errors->get('employee_code')" class="mt-2" />
-                                </div>
-
                                 <!-- Họ -->
-                                <div class="mt-4">
+                                <div>
                                     <x-input-label for="first_name" value="{{ __('Họ') }}" />
                                     <x-text-input id="first_name" class="block mt-1 w-full" type="text"
                                         name="first_name" :value="old('first_name')" required />

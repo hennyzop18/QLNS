@@ -46,23 +46,28 @@ class EmployeeController extends Controller
     {
         // --- Validation ---
         $validatedData = $request->validate([
-            'employee_code' => 'required|string|unique:employees,employee_code|max:50',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => 'required|string|email|max:255|unique:users,email', // Email để tạo tài khoản user
+            'email' => 'required|string|email|max:255|unique:users,email',
             'gender' => ['required', Rule::in(['male', 'female', 'other'])],
             'dob' => 'nullable|date|before:today',
             'phone_number' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'hire_date' => 'required|date',
             'position_id' => 'required|exists:positions,id',
-            'department_id' => 'required|exists:departments,id', // Thêm department_id
-            'create_account' => 'nullable|boolean' // Checkbox để tạo tài khoản
+            'department_id' => 'required|exists:departments,id',
+            'salary_type' => 'required|in:fixed,hourly',
+            'base_salary' => 'nullable|numeric|min:0',
+            'hourly_rate' => 'nullable|numeric|min:0',
+            'taxable_allowances' => 'nullable|numeric|min:0',
+            'nontaxable_allowances' => 'nullable|numeric|min:0',
+            'insurance_salary' => 'nullable|numeric|min:0',
+            'dependents' => 'nullable|integer|min:0',
+            'create_account' => 'nullable|boolean'
         ]);
 
         // --- Tạo Employee ---
         $employee = Employee::create([
-            'employee_code' => $validatedData['employee_code'],
             'first_name' => $validatedData['first_name'],
             'last_name' => $validatedData['last_name'],
             'gender' => $validatedData['gender'],
