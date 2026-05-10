@@ -45,8 +45,15 @@ RUN mkdir -p public/models && \
     curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/tiny_face_detector_model-shard1 -o public/models/tiny_face_detector_model-shard1 && \
     curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/tiny_face_detector_model-weights_manifest.json -o public/models/tiny_face_detector_model-weights_manifest.json
 
-# Cài đặt dependencies
+# Cài đặt Node.js (để build assets với Vite)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Cài đặt dependencies của Laravel
 RUN composer install --no-dev --optimize-autoloader
+
+# Build frontend assets
+RUN npm install && npm run build
 
 # Cấu hình Nginx cho HF (Port 7860)
 COPY ./docker/nginx.conf /etc/nginx/sites-available/default
