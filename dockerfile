@@ -1,0 +1,50 @@
+FROM php:8.2-fpm
+
+# Cài đặt system dependencies
+RUN apt-get update && apt-get install -y \
+    git curl libpng-dev libonig-dev libxml2-dev zip unzip nginx libpq-dev
+
+# Cài đặt PHP extensions
+RUN docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd
+
+# Cài đặt Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www
+
+# Copy code
+COPY . .
+
+# Tải đầy đủ các AI models (để tránh lỗi push file binary lên HF)
+RUN mkdir -p public/models && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/age_gender_model-shard1 -o public/models/age_gender_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/age_gender_model-weights_manifest.json -o public/models/age_gender_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_expression_model-shard1 -o public/models/face_expression_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_expression_model-weights_manifest.json -o public/models/face_expression_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_landmark_68_model-shard1 -o public/models/face_landmark_68_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_landmark_68_model-weights_manifest.json -o public/models/face_landmark_68_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_landmark_68_tiny_model-shard1 -o public/models/face_landmark_68_tiny_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_landmark_68_tiny_model-weights_manifest.json -o public/models/face_landmark_68_tiny_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_recognition_model-shard1 -o public/models/face_recognition_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_recognition_model-shard2 -o public/models/face_recognition_model-shard2 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/face_recognition_model-weights_manifest.json -o public/models/face_recognition_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/mtcnn_model-shard1 -o public/models/mtcnn_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/mtcnn_model-weights_manifest.json -o public/models/mtcnn_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/ssd_mobilenetv1_model-shard1 -o public/models/ssd_mobilenetv1_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/ssd_mobilenetv1_model-shard2 -o public/models/ssd_mobilenetv1_model-shard2 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/ssd_mobilenetv1_model-weights_manifest.json -o public/models/ssd_mobilenetv1_model-weights_manifest.json && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/tiny_face_detector_model-shard1 -o public/models/tiny_face_detector_model-shard1 && \
+    curl -L https://github.com/justadudewhohacks/face-api.js/raw/master/weights/tiny_face_detector_model-weights_manifest.json -o public/models/tiny_face_detector_model-weights_manifest.json
+
+# Cài đặt dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Cấu hình Nginx cho HF (Port 7860)
+COPY ./docker/nginx.conf /etc/nginx/sites-available/default
+EXPOSE 7860
+
+# Cấp quyền
+RUN chown -R www-data:www-data /var/www/storage /var/www/cache
+
+# Chạy lệnh khởi động (Auto migrate và start services)
+CMD php artisan migrate --force && service nginx start && php-fpm
