@@ -1,3 +1,12 @@
+---
+title: QLNS App
+emoji: 🏢
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # 📋 Hệ Thống Quản Lý Nhân Sự & Chấm Công
 
 > Tài liệu hướng dẫn cài đặt, khởi chạy và sử dụng ứng dụng
