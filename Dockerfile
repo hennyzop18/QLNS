@@ -59,8 +59,13 @@ RUN npm install && npm run build
 COPY ./docker/nginx.conf /etc/nginx/sites-available/default
 EXPOSE 7860
 
-# Cấp quyền và tạo thư mục storage cần thiết
-RUN mkdir -p /var/www/storage/app/public/avatars && \
+# Cấp quyền và tạo các thư mục cần thiết (Cực kỳ quan trọng cho HF)
+RUN mkdir -p /var/www/storage/app/public/avatars \
+             /var/www/storage/framework/cache \
+             /var/www/storage/framework/sessions \
+             /var/www/storage/framework/views \
+             /var/www/storage/logs && \
+    chmod -R 777 /var/www/storage /var/www/bootstrap/cache && \
     chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 # Chạy lệnh khởi động (Auto migrate, force storage link và start services)

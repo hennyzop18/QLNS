@@ -45,8 +45,8 @@ class FaceApiController extends Controller
             }
 
             // Đảm bảo thư mục avatars tồn tại
-            if (!Storage::disk('public')->exists('avatars')) {
-                Storage::disk('public')->makeDirectory('avatars');
+            if (!Storage::disk('public')->directoryExists('avatars')) {
+                Storage::disk('public')->makeDirectory('avatars', 0777, true);
             }
 
             // Lưu file mới vào storage/app/public/avatars
