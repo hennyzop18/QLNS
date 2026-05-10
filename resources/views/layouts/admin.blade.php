@@ -29,9 +29,19 @@
 
 
         <!-- Page Content -->
-        <main class="flex">
+        <main class="flex flex-col md:flex-row min-h-screen">
+            {{-- Mobile Header --}}
+            <div class="md:hidden sticky top-0 z-50 bg-white shadow-sm p-4 flex justify-between items-center border-b">
+                <span class="font-bold text-gray-700">QLNS Admin</span>
+                <button id="mobile-menu-button" class="text-gray-600 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
             {{-- Admin Sidebar --}}
-            <aside class="w-64 bg-white shadow-md hidden md:block flex-shrink-0">
+            <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Quản lý</h3>
                     <nav class="space-y-2">
@@ -97,8 +107,8 @@
             <div class="flex-1">
                 <!-- Page Heading -->
                 @if (isset($header))
-                    <header class="bg-white shadow">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <header class="bg-white shadow sticky top-[57px] md:top-0 z-40">
+                        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
                     </header>
@@ -175,7 +185,28 @@
                 }
             });
         });
+
+        // Mobile Menu Toggle
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+
+        if (mobileMenuButton) {
+            mobileMenuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+        }
     </script>
+    {{-- Overlay for Mobile Sidebar --}}
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-50 z-40 hidden md:hidden"></div>
 </body>
 
 </html>

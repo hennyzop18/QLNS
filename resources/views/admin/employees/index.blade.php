@@ -11,16 +11,16 @@
                 <div class="p-6 bg-white border-b border-gray-200">
 
                     {{-- Nút thêm mới và tìm kiếm --}}
-                    <div class="mb-4 flex justify-between items-center">
+                    <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                         <a href="{{ route('admin.employees.create') }}"
-                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                            class="w-full sm:w-auto text-center inline-flex justify-center items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
                             Thêm Nhân Viên
                         </a>
-                        <form method="GET" action="{{ route('admin.employees.index') }}">
+                        <form method="GET" action="{{ route('admin.employees.index') }}" class="w-full sm:w-auto flex">
                             <input type="text" name="search" placeholder="Tìm kiếm..." value="{{ $search ?? '' }}"
-                                class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                class="flex-1 border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-l-md shadow-sm">
                             <button type="submit"
-                                class="ml-2 inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-400 active:bg-blue-600 focus:outline-none focus:border-blue-600 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">Tìm</button>
+                                class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-r-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-400 active:bg-blue-600 focus:outline-none focus:border-blue-600 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">Tìm</button>
                         </form>
                     </div>
 
