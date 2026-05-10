@@ -96,6 +96,9 @@ return [
             'search_path' => 'public',
             'sslmode' => 'prefer',
             'prepared' => false,
+            'options' => [
+                PDO::ATTR_PERSISTENT => true,
+            ],
         ],
 
         'sqlsrv' => [
