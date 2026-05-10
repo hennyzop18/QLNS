@@ -13,21 +13,12 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ngày</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Giờ vào</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Giờ ra</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Trạng thái</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ghi chú</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ vào</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ ra</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghi chú</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -37,30 +28,31 @@
                                             {{ $attendance->date->format('d/m/Y') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $attendance->check_in_time ? $attendance->check_in_time->format('H:i:s') : 'N/A' }}
+                                            {{ $attendance->check_in_time ? $attendance->check_in_time->format('H:i') : '--' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $attendance->check_out_time ? $attendance->check_out_time->format('H:i:s') : 'N/A' }}
+                                            {{ $attendance->check_out_time ? $attendance->check_out_time->format('H:i') : '--' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{-- Hiển thị status nếu có --}}
-                                            @if($attendance->status)
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                                                    @if($attendance->status == 'present') bg-green-100 text-green-800
-                                                                    @elseif($attendance->status == 'late') bg-yellow-100 text-yellow-800
-                                                                    @elseif($attendance->status == 'absent') bg-red-100 text-red-800
-                                                                    @elseif($attendance->status == 'leave') bg-blue-100 text-blue-800
-                                                                    @else bg-gray-100 text-gray-800 @endif">
-                                                    {{ ucfirst($attendance->status == 'present' ? 'Có mặt' : ($attendance->status == 'late' ? 'Đi trễ' : ($attendance->status == 'absent' ? 'Vắng' : 'N/A'))) }}
-                                                </span>
-                                            @else
-                                                N/A
-                                            @endif
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                                @if($attendance->status == 'present') bg-green-100 text-green-800
+                                                @elseif($attendance->status == 'late') bg-yellow-100 text-yellow-800
+                                                @elseif($attendance->status == 'absent') bg-red-100 text-red-800
+                                                @elseif($attendance->status == 'leave') bg-blue-100 text-blue-800
+                                                @else bg-gray-100 text-gray-800 @endif">
+                                                {{ ucfirst($attendance->status ?? 'N/A') }}
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-normal text-sm text-gray-500">
                                             {{ $attendance->notes }}
                                         </td>
-
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            @if($attendance->status == 'late' || $attendance->status == 'absent')
+                                                <a href="{{ route('employee.attendance.adjust.create', $attendance) }}" class="text-indigo-600 hover:text-indigo-900">
+                                                    Giải trình
+                                                </a>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>

@@ -28,50 +28,71 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                {{-- Phần đầu: Thông tin nhận diện và Ảnh --}}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 border-b">
+                    {{-- Cột Trái: Tên, Mã & Liên hệ --}}
+                    <div class="lg:col-span-2 space-y-6">
+                        <div>
+                            <h3 class="text-3xl font-extrabold text-gray-900">{{ $employee->full_name }}</h3>
+                            <div class="flex items-center mt-2 space-x-4">
+                                <span class="text-lg text-blue-600 font-semibold tracking-wider">{{ $employee->employee_code }}</span>
+                                @php
+                                    $statusClass = match ($employee->status) {
+                                        'active' => 'bg-green-100 text-green-800',
+                                        'inactive' => 'bg-yellow-100 text-yellow-800',
+                                        'terminated' => 'bg-red-100 text-red-800',
+                                        default => 'bg-gray-100 text-gray-800',
+                                    };
+                                    $statusText = match ($employee->status) {
+                                        'active' => 'Hoạt động',
+                                        'inactive' => 'Tạm nghỉ',
+                                        'terminated' => 'Đã nghỉ việc',
+                                        default => ucfirst($employee->status),
+                                    };
+                                @endphp
+                                <span class="px-3 py-1 text-xs font-bold rounded-full {{ $statusClass }}">
+                                    {{ $statusText }}
+                                </span>
+                            </div>
+                        </div>
 
-                    {{-- Hàng Trên: Ảnh đại diện và Thông tin cá nhân chi tiết --}}
-                    <div class="space-y-6"></div>
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold text-gray-800">{{ $employee->full_name }}</h3>
-                        <p class="text-sm text-gray-500">{{ $employee->employee_code }}</p>
-                        {{-- Status Badge --}}
-                        @php
-                            $statusClass = match ($employee->status) {
-                                'active' => 'bg-green-100 text-green-800',
-                                'inactive' => 'bg-yellow-100 text-yellow-800',
-                                'terminated' => 'bg-red-100 text-red-800',
-                                default => 'bg-gray-100 text-gray-800',
-                            };
-                            $statusText = match ($employee->status) {
-                                'active' => 'Hoạt động',
-                                'inactive' => 'Tạm nghỉ',
-                                'terminated' => 'Đã nghỉ việc',
-                                default => ucfirst($employee->status),
-                            };
-                        @endphp
-                        <span class="mt-2 px-3 py-1 inline-flex text-xs font-semibold rounded-full {{ $statusClass }}">
-                            {{ $statusText }}
-                        </span>
+                        <div class="pt-6 border-t border-gray-100">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Thông tin liên hệ</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm text-gray-700">
+                                <div class="flex items-center space-x-3">
+                                    <div class="p-2 bg-blue-50 rounded-lg text-blue-500">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    </div>
+                                    <span class="font-medium">{{ $employee->phone_number ?? 'Chưa cập nhật' }}</span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="p-2 bg-blue-50 rounded-lg text-blue-500">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <span class="font-medium truncate">{{ $employee->personal_email ?? 'Chưa cập nhật' }}</span>
+                                </div>
+                                @if($employee->user)
+                                    <div class="flex items-center space-x-3 md:col-span-2">
+                                        <div class="p-2 bg-indigo-50 rounded-lg text-indigo-500">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        </div>
+                                        <span class="font-medium text-indigo-700">{{ $employee->user->email }} (Tài khoản đăng nhập)</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="border-t pt-6 space-y-4">
-                        <h4 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Thông tin liên hệ
-                        </h4>
-                        <div class="flex items-center space-x-2 text-sm text-gray-700">
-                            <x-icon.phone class="h-5 w-5 text-gray-400" />
-                            <span>{{ $employee->phone_number ?? 'Chưa cập nhật' }}</span>
-                        </div>
-                        <div class="flex items-center space-x-2 text-sm text-gray-700">
-                            <x-icon.email class="h-5 w-5 text-gray-400" />
-                            <span>{{ $employee->personal_email ?? 'Chưa cập nhật' }} (Cá nhân)</span>
-                        </div>
-                        @if($employee->user)
-                            <div class="flex items-center space-x-2 text-sm text-gray-700">
-                                <x-icon.login class="h-5 w-5 text-gray-400" />
-                                <span>{{ $employee->user->email }} (Đăng nhập)</span>
+                    {{-- Cột Phải: Ảnh đại diện --}}
+                    <div class="flex justify-center items-center lg:justify-end">
+                        <div class="relative">
+                            <img src="{{ $employee->avatar ? asset('storage/' . $employee->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($employee->full_name) . '&size=200&background=EBF4FF&color=7F9CF5' }}" 
+                                 class="w-44 h-44 rounded-3xl object-cover shadow-2xl border-4 border-white"
+                                 alt="{{ $employee->full_name }}">
+                            <div class="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-lg border border-gray-100">
+                                <div class="w-4 h-4 rounded-full {{ $employee->status === 'active' ? 'bg-green-500' : 'bg-gray-400' }}"></div>
                             </div>
-                        @endif
+                        </div>
                     </div>
                 </div>
 

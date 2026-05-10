@@ -194,4 +194,55 @@ class ReportController extends Controller
         ));
     }
 
+    public function attendanceDepartmentStats(Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // Tính số ngày làm việc chuẩn trong tháng này (loại bỏ Thứ 7, CN)
+        $standardDaysInMonth = 0;
+        $tempDate = $startDate->copy();
+        while ($tempDate <= $endDate) {
+            if (!$tempDate->isWeekend()) {
+                $standardDaysInMonth++;
+            }
+            $tempDate->addDay();
+        }
+
+        $stats = Department::with(['employees' => function($q) {
+                $q->where('status', 'active');
+            }])
+            ->get()
+            ->map(function($dept) use ($startDate, $endDate, $standardDaysInMonth) {
+                $employeeIds = $dept->employees->pluck('id');
+                
+                $attendance = Attendance::whereIn('employee_id', $employeeIds)
+                    ->whereBetween('date', [$startDate, $endDate])
+                    ->selectRaw("
+                        COUNT(*) as total_records,
+                        SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late_days,
+                        SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_days
+                    ")
+                    ->first();
+
+                $totalEmployees = $dept->employees->count();
+                $totalExpectedDays = $totalEmployees * $standardDaysInMonth; 
+
+                return (object) [
+                    'name' => $dept->name,
+                    'total_employees' => $totalEmployees,
+                    'late_days' => $attendance->late_days ?? 0,
+                    'absent_days' => $attendance->absent_days ?? 0,
+                    'total_records' => $attendance->total_records ?? 0,
+                    'late_rate' => ($attendance->total_records ?? 0) > 0 ? round(($attendance->late_days / $attendance->total_records) * 100, 2) : 0,
+                    'absent_rate' => $totalExpectedDays > 0 ? round(($attendance->absent_days / $totalExpectedDays) * 100, 2) : 0,
+                ];
+            });
+
+        return view('admin.reports.attendance_dept_stats', compact('stats', 'month', 'year', 'standardDaysInMonth'));
+    }
+
 }

@@ -26,8 +26,9 @@ class AttendanceController extends Controller
             'employee' => function ($q) {
                 $q->select('id', 'first_name', 'last_name', 'employee_code', 'department_id'); // Chỉ lấy cột cần thiết
             },
-            'employee.department:id,name'
-        ]) // Load phòng ban của nhân viên
+            'employee.department:id,name',
+            'admin:id,name'
+        ])
             ->whereDate('date', $filterDate)
             ->orderBy('check_in_time', 'asc');
 
@@ -204,6 +205,7 @@ class AttendanceController extends Controller
 
         // Chỉ gọi update nếu thực sự có dữ liệu thay đổi
         if ($changed) {
+            $updateData['admin_id'] = auth()->id(); // Ghi vết Admin thực hiện thay đổi
             Log::info("Updating Attendance ID {$attendance->id} with data:", $updateData);
             $attendance->update($updateData);
         } else {

@@ -148,36 +148,34 @@ class FaceApiController extends Controller
                 $endTime->addDay();
             }
 
-            // Nếu về sớm hơn thời gian kết thúc QUÁ 15 phút -> Hủy thành Vắng mặt
-            if ($now->copy()->addMinutes(15)->lt($endTime)) {
-                $todaysAttendance->status = 'absent';
-                Log::info("FaceID Check-out: Employee {$employee->id} marked as ABSENT due to leaving > 15 mins early.");
+            // Nếu về sớm hơn thời gian kết thúc -> Ghi chú lại (không hủy thành vắng mặt)
+            if ($now->lt($endTime)) {
+                $earlyMinutes = $now->diffInMinutes($endTime);
+                if ($earlyMinutes > 5) {
+                    $todaysAttendance->notes = ($todaysAttendance->notes ? $todaysAttendance->notes . " | " : "") . "Về sớm {$earlyMinutes} phút";
+                }
             }
         }
 
         $todaysAttendance->save();
-        Cache::forget($tokenKey); // Xóa token SAU KHI lưu DB thành công
+        Cache::forget($tokenKey); 
         $action = 'Check-out (Cập nhật)';
     } 
     else {
         // CHƯA CÓ CHECK-IN -> Lần đầu tiên chấm trong ngày -> Ghi nhận CHECK-IN
         $workSchedule = $employee->activeWorkScheduleOn($today);
-        $status = 'present'; // Mặc định nếu không có lịch làm việc
+        $status = 'present'; 
         
         if ($workSchedule) {
             $startTime = Carbon::parse($today->toDateString() . ' ' . $workSchedule->start_time);
             
-            // Nếu đi trễ QUÁ 15 phút -> Vắng mặt
-            if ($now->copy()->subMinutes(15)->gt($startTime)) {
-                $status = 'absent';
-                Log::info("FaceID Check-in: Employee {$employee->id} marked as ABSENT due to > 15 mins late.");
-            }
-            // Nếu đi trễ nhưng TRONG KHOẢNG 15 phút -> Trễ (late)
-            elseif ($now->gt($startTime)) {
+            // Nếu đi trễ (bất kể bao lâu) -> Late (không nên đánh vắng mặt nếu người ta có đến)
+            if ($now->gt($startTime)) {
                 $status = 'late';
-                Log::info("FaceID Check-in: Employee {$employee->id} marked as LATE (within 15 mins tolerance).");
+                $lateMinutes = $now->diffInMinutes($startTime);
+                Log::info("FaceID Check-in: Employee {$employee->id} marked as LATE ({$lateMinutes} mins).");
             }
-            // Nằm ở mức bằng hoặc trước giờ vào làm -> Đúng giờ (present)
+            // Đúng giờ hoặc sớm hơn
             else {
                 $status = 'present';
                 Log::info("FaceID Check-in: Employee {$employee->id} marked as PRESENT.");
@@ -191,7 +189,8 @@ class FaceApiController extends Controller
             'date' => $today->toDateString(),
             'check_in_time' => $now,
             'status' => $status,
-            'check_out_time' => null
+            'check_out_time' => null,
+            'work_schedule_id' => $workSchedule?->id // Lưu ID ca làm việc tại thời điểm chấm công
         ]);
         Cache::forget($tokenKey); // Xóa token SAU KHI lưu DB thành công
         $action = 'Check-in';

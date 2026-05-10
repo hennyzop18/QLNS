@@ -89,9 +89,11 @@
                                                 class="text-indigo-600 hover:text-indigo-900 mr-2">Xem</a>
                                             <a href="{{ route('admin.employees.edit', $employee) }}"
                                                 class="text-blue-600 hover:text-blue-900 mr-2">Sửa</a>
-                                            <form action="{{ route('admin.employees.destroy', $employee) }}" method="POST"
-                                                class="inline-block"
-                                                onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhân viên này?');">
+                                            <form action="{{ route('admin.employees.destroy', $employee) }}" 
+                                                method="POST" 
+                                                class="inline-block confirm-form"
+                                                data-title="Xóa nhân viên?"
+                                                data-text="Hành động này sẽ xóa vĩnh viễn dữ liệu của nhân viên '{{ $employee->full_name }}'. Bạn chắc chắn chứ?">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900">Xóa</button>

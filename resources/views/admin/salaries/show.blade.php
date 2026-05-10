@@ -19,8 +19,8 @@
                         </x-primary-button>
                     </a>
                     {{-- Form Đánh dấu đã thanh toán --}}
-                    <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block"
-                        onsubmit="return confirm('Xác nhận đã thanh toán lương?');">
+                    <form action="{{ route('admin.salaries.update', $salary) }}" method="POST" class="inline-block confirm-form"
+                        data-title="Xác nhận thanh toán?" data-text="Bạn xác nhận đã thanh toán lương cho nhân viên này?">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="mark_as_paid" value="1">
@@ -30,6 +30,20 @@
                         </x-primary-button>
                     </form>
                 @endif
+
+                <a href="{{ route('admin.salaries.export-pdf', $salary) }}" target="_blank">
+                    <x-secondary-button>
+                        📄 {{ __('Xuất PDF') }}
+                    </x-secondary-button>
+                </a>
+
+                <form action="{{ route('admin.salaries.send-email', $salary) }}" method="POST" class="inline-block confirm-form"
+                    data-title="Gửi email phiếu lương?" data-text="Hệ thống sẽ gửi file PDF phiếu lương đến email của nhân viên này.">
+                    @csrf
+                    <x-secondary-button type="submit">
+                        📧 {{ __('Gửi Email') }}
+                    </x-secondary-button>
+                </form>
             </div>
         </div>
     </x-slot>
@@ -97,10 +111,16 @@
                                 <dt class="font-medium text-gray-500">Lương cơ bản (gross)</dt>
                                 <dd class="mt-1 text-gray-900 text-right">{{ number_format($salary->base_salary, 0, ',', '.') }} đ</dd>
                             </div>
-                            <div>
+                             <div>
                                 <dt class="font-medium text-gray-500">Ngày công thực tế / chuẩn</dt>
-                                <dd class="mt-1 text-gray-900 text-right">
-                                    {{ $salary->actual_work_days ?? 0 }} / {{ $salary->standard_work_days ?? 22 }} ngày
+                                <dd class="mt-1 text-right">
+                                    <span class="{{ ($salary->actual_work_days ?? 0) == 0 ? 'text-red-600 font-bold' : 'text-gray-900' }}">
+                                        {{ $salary->actual_work_days ?? 0 }}
+                                    </span> 
+                                    / {{ $salary->standard_work_days ?? 22 }} ngày
+                                    @if(($salary->actual_work_days ?? 0) == 0)
+                                        <p class="text-[10px] text-red-500 mt-1">(! Không có dữ liệu chấm công)</p>
+                                    @endif
                                 </dd>
                             </div>
                             <div>
@@ -167,6 +187,48 @@
 
                         </dl>
                     </div>
+
+                    {{-- Chi tiết OT (Dành cho đối soát) --}}
+                    @if(isset($approvedOts) && $approvedOts->isNotEmpty())
+                    <div class="border-b pb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-4">Chi tiết tăng ca (OT)</h4>
+                        <div class="overflow-x-auto bg-gray-50 rounded-lg p-2 border border-gray-100">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="text-gray-500 uppercase text-[10px] tracking-widest font-bold">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Ngày</th>
+                                        <th class="px-4 py-2 text-left">Loại ngày</th>
+                                        <th class="px-4 py-2 text-center">Số giờ</th>
+                                        <th class="px-4 py-2 text-center">Hệ số</th>
+                                        <th class="px-4 py-2 text-left">Lý do</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach($approvedOts as $ot)
+                                    <tr class="hover:bg-white transition-colors">
+                                        <td class="px-4 py-3 whitespace-nowrap font-medium">{{ \Carbon\Carbon::parse($ot->date)->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-3">
+                                            @php
+                                                $colorClass = match($ot->multiplier) {
+                                                    3.0 => 'bg-red-100 text-red-700',
+                                                    2.0 => 'bg-orange-100 text-orange-700',
+                                                    default => 'bg-gray-100 text-gray-700'
+                                                };
+                                            @endphp
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $colorClass }}">
+                                                {{ $ot->type_text }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-center font-bold text-gray-900">{{ $ot->hours }}h</td>
+                                        <td class="px-4 py-3 text-center text-blue-600 font-bold underline">{{ $ot->multiplier }}x</td>
+                                        <td class="px-4 py-3 text-gray-500 italic max-w-xs truncate">{{ $ot->reason }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @endif
 
                     {{-- Trạng thái thanh toán --}}
                     <div>

@@ -14,12 +14,13 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Styles -->
     <!-- @livewireStyles -->
 </head>
 
-<body class="font-sans antialiased">
+<body class="font-sans antialiased" data-success="{{ session('success') }}" data-error="{{ session('error') }}">
 
 
     <div class="min-h-screen bg-gray-100">
@@ -113,6 +114,68 @@
     <!-- @livewireScripts -->
     {{-- Thêm script riêng nếu cần --}}
     @stack('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cấu hình Toast mặc định
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            // Hiển thị thông báo từ Session Flash (qua data-attributes)
+            const successMsg = document.body.dataset.success;
+            const errorMsg = document.body.dataset.error;
+
+            if (successMsg && successMsg !== "") {
+                Toast.fire({
+                    icon: 'success',
+                    title: successMsg
+                });
+            }
+
+            if (errorMsg && errorMsg !== "") {
+                Toast.fire({
+                    icon: 'error',
+                    title: errorMsg
+                });
+            }
+
+            // Tự động xử lý các form có class 'confirm-form'
+            document.body.addEventListener('submit', function(e) {
+                const form = e.target.closest('.confirm-form');
+                if (form && !form.dataset.confirmed) {
+                    e.preventDefault();
+                    const title = form.getAttribute('data-title') || 'Xác nhận?';
+                    const text = form.getAttribute('data-text') || 'Hành động này không thể hoàn tác.';
+                    const icon = form.getAttribute('data-icon') || 'question';
+                    const confirmBtnText = form.getAttribute('data-confirm-text') || 'Đồng ý';
+                    
+                    Swal.fire({
+                        title: title,
+                        text: text,
+                        icon: icon,
+                        showCancelButton: true,
+                        confirmButtonColor: '#4f46e5',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: confirmBtnText,
+                        cancelButtonText: 'Hủy'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.dataset.confirmed = "true";
+                            form.submit();
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

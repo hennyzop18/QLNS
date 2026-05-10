@@ -38,12 +38,15 @@ class ProfileController extends Controller
 
         // Tách dữ liệu cho Employee và User
         $employeeData = [
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
             'phone_number' => $validated['phone_number'] ?? null,
             'personal_email' => $validated['personal_email'] ?? null,
             'address' => $validated['address'] ?? null,
         ];
+
         $userData = [
-            'name' => $validated['name'],
+            'name' => $validated['last_name'] . ' ' . $validated['first_name'],
             'email' => $validated['email'],
         ];
 

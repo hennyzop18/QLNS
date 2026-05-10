@@ -19,7 +19,7 @@
                              </div>
                              <div>
                                   <x-input-label for="department_id" value="Phòng Ban" />
-                                  <select name="department_id" id="department_id" class="block w-full mt-1 border-gray-300 ... rounded-md shadow-sm">
+                                  <select name="department_id" id="department_id" class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
                                       <option value="">-- Tất cả Phòng Ban --</option>
                                       @foreach($departments as $department)
                                           <option value="{{ $department->id }}" @selected($filterDepartment == $department->id)>
@@ -30,7 +30,7 @@
                               </div>
                              <div>
                                  <x-input-label for="employee_id" value="Nhân Viên" />
-                                 <select name="employee_id" id="employee_id" class="block w-full mt-1 border-gray-300 ... rounded-md shadow-sm">
+                                 <select name="employee_id" id="employee_id" class="block w-full mt-1 border-gray-300 rounded-md shadow-sm">
                                      <option value="">-- Tất cả Nhân Viên --</option>
                                      @foreach($employees as $employee)
                                          <option value="{{ $employee->id }}" @selected($filterEmployee == $employee->id)>
@@ -49,9 +49,6 @@
                      <x-session-status class="mb-4" :status="session('success')" type="success" />
                      <x-session-status class="mb-4" :status="session('error')" type="error" />
 
-                     {{-- Thêm nút tạo thủ công nếu cần --}}
-                     {{-- <a href="{{ route('admin.attendances.create') }}" class="mb-4 inline-block ...">Thêm thủ công</a> --}}
-
                      <div class="overflow-x-auto">
                          <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -62,6 +59,7 @@
                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ Vào</th>
                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ Ra</th>
                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng Thái</th>
+                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin sửa</th>
                                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghi chú</th>
                                      <th class="relative px-6 py-3"></th>
                                  </tr>
@@ -75,22 +73,27 @@
                                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $attendance->check_in_time ? $attendance->check_in_time->format('H:i:s') : '-' }}</td>
                                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $attendance->check_out_time ? $attendance->check_out_time->format('H:i:s') : '-' }}</td>
                                          <td class="px-6 py-4 whitespace-nowrap">
-                                             {{-- Status badge --}}
                                              @if($attendance->status)
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $attendance->status == 'present' ? 'bg-green-100 text-green-800' : ($attendance->status == 'late' ? 'bg-yellow-100 text-yellow-800' : ($attendance->status == 'absent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
                                                     {{ ucfirst($attendance->status == 'present' ? 'Có mặt' : ($attendance->status == 'late' ? 'Đi trễ' : ($attendance->status == 'absent' ? 'Vắng' : 'N/A'))) }}
                                                 </span>
                                              @endif
                                          </td>
+                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                             @if($attendance->admin)
+                                                 <span class="text-indigo-600 font-medium">{{ $attendance->admin->name }}</span>
+                                             @else
+                                                 <span class="text-gray-400 italic">Hệ thống</span>
+                                             @endif
+                                         </td>
                                          <td class="px-6 py-4 whitespace-normal text-sm text-gray-500 text-ellipsis overflow-hidden max-w-xs">{{ $attendance->notes }}</td>
                                          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                              {{-- Truyền các query params vào route edit để giữ bộ lọc khi quay lại --}}
                                              <a href="{{ route('admin.attendances.edit', ['attendance' => $attendance->id] + request()->query()) }}" class="text-blue-600 hover:text-blue-900">Sửa</a>
                                          </td>
                                      </tr>
                                  @empty
                                      <tr>
-                                         <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">Không tìm thấy dữ liệu chấm công cho ngày đã chọn.</td>
+                                         <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">Không tìm thấy dữ liệu chấm công cho ngày đã chọn.</td>
                                      </tr>
                                  @endforelse
                              </tbody>
@@ -98,7 +101,6 @@
                      </div>
 
                      <div class="mt-4">
-                          {{-- Phân trang giữ lại query params --}}
                          {{ $attendances->links() }}
                      </div>
 
@@ -106,4 +108,4 @@
              </div>
          </div>
      </div>
- </x-admin-layout>
+  </x-admin-layout>

@@ -12,6 +12,18 @@ class Employee extends Model
 {
     use HasFactory, SoftDeletes; // Sử dụng SoftDeletes
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($employee) {
+            if (empty($employee->employee_code)) {
+                // Tạo mã ngẫu nhiên QLNS-XXXXXX (6 ký tự)
+                $employee->employee_code = 'QLNS-' . strtoupper(bin2hex(random_bytes(3)));
+            }
+        });
+    }
+
     protected $fillable = [
         'employee_code',
         'first_name',
@@ -64,6 +76,15 @@ class Employee extends Model
     {
         return $this->belongsTo(WorkSchedule::class);
     }
+    public function getApprovedLeaveOn(Carbon $date): ?LeaveRequest
+    {
+        return $this->leaveRequests()
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date->toDateString())
+            ->where('end_date', '>=', $date->toDateString())
+            ->first();
+    }
+
     public function activeWorkScheduleOn(Carbon $date): ?WorkSchedule
     {
         $targetDate = $date->toDateString();
@@ -132,10 +153,6 @@ class Employee extends Model
         return null;
     }
     // Quan hệ: Một Employee có thể có một User account
-    public function user()
-    {
-       return $this->hasOne(User::class, 'employee_id', 'id');
-    }
 
     // Quan hệ: Một Employee có nhiều Attendance records
     public function attendances()
@@ -157,6 +174,21 @@ class Employee extends Model
     }
     public function salaries() { // Bảng lương
         return $this->hasMany(Salary::class);
+    }
+
+    public function leaveRequests()
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function overtimeRequests()
+    {
+        return $this->hasMany(OvertimeRequest::class);
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'employee_id', 'id');
     }
 
 }
