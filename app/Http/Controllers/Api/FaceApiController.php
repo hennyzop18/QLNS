@@ -57,7 +57,8 @@ class FaceApiController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Lỗi lưu avatar: ' . $e->getMessage());
-            return response()->json(['message' => 'Đã xảy ra lỗi khi lưu ảnh đại diện.'], 500);
+            // Trả về lỗi chi tiết để debug (Sẽ xóa sau khi sửa xong)
+            return response()->json(['message' => 'Lỗi: ' . $e->getMessage()], 500);
         }
 
         // 2. Lưu face descriptor

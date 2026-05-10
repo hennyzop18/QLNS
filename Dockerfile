@@ -63,5 +63,8 @@ EXPOSE 7860
 RUN mkdir -p /var/www/storage/app/public/avatars && \
     chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Chạy lệnh khởi động (Auto migrate, storage link và start services)
-CMD php artisan migrate --force && php artisan storage:link && nginx && php-fpm
+# Chạy lệnh khởi động (Auto migrate, force storage link và start services)
+CMD php artisan migrate --force && \
+    rm -rf public/storage && \
+    php artisan storage:link && \
+    nginx && php-fpm
