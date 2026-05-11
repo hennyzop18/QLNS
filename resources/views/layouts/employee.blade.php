@@ -37,7 +37,7 @@
             </div>
 
             {{-- Employee Sidebar --}}
-            <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform -translate-x-full md:sticky md:top-0 md:h-screen md:overflow-y-auto md:translate-x-0 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Nhân Viên</h3>
                     <nav class="space-y-2">
